@@ -45,7 +45,7 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
     updated_lines.append(new_entry)
 
     # 3. Zapisz zaktualizowaną historię z powrotem do pliku
-    with range_file := open(file_path, "w", encoding="utf-8"):
+    with open(file_path, "w", encoding="utf-8") as range_file:
         for line in updated_lines:
             range_file.write(line + "\n")
 
