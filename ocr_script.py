@@ -8,6 +8,7 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+
 def get_latest_image():
     """Szuka najnowszego pliku graficznego w folderze img_tmp"""
     image_extensions = ["*.png", "*.jpg", "*.jpeg", "*.PNG", "*.JPG", "*.JPEG"]
@@ -18,11 +19,12 @@ def get_latest_image():
         return None
     return max(files, key=os.path.getmtime)
 
+
 def get_history_data(file_path="odczyty24h.txt"):
     """Pobiera dane historyczne i przygotowuje etykiety oraz wartości do wykresu"""
     labels = []
     values = []
-    
+
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -31,19 +33,19 @@ def get_history_data(file_path="odczyty24h.txt"):
                     continue
                 try:
                     parts = line.split(" | ")
-                    # NAPRAWIONE INDEKSOWANIE:
                     date_str = parts[0]
                     val_str = parts[1]
-                    
+
                     # Formatujemy datę do krótkiej formy na oś X (np. 18:35)
                     dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                     short_date = dt.strftime("%H:%M")
-                    
+
                     labels.append(short_date)
                     values.append(float(val_str))
                 except (ValueError, IndexError, TypeError):
                     continue
     return labels, values
+
 
 def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
     """Zapisuje nowy odczyt i usuwa wpisy starsze niż 24 godziny"""
@@ -59,7 +61,6 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
                     continue
                 try:
                     parts = line.split(" | ")
-                    # NAPRAWIONE INDEKSOWANIE:
                     date_part = parts[0]
                     entry_time = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
                     if entry_time >= cutoff_time:
@@ -75,23 +76,25 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
         for line in updated_lines:
             range_file.write(line + "\n")
 
+
 def optimize_image(image_path, max_size=1024):
     """Zmniejsza wagę pliku i rozdzielczość, aby uniknąć rozłączania API"""
     with Image.open(image_path) as img:
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-        
+
         img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-        
+
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG', quality=85)
         return img_byte_arr.getvalue()
+
 
 def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
     """Aktualizuje plik index.html nowymi danymi, statusem oraz wykresem Chart.js"""
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
-    
+
     uwaga_html = ""
     if not success:
         uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
@@ -106,7 +109,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Podgląd Licznika Gazu</title>
     <!-- Dołączenie biblioteki Chart.js z CDN -->
-    <script src="https://jsdelivr.net"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {{
             font-family: Arial, sans-serif;
@@ -144,7 +147,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">{timestamp}</span></div>
         <div class="odczyt">{value} m³</div>
         {uwaga_html}
-        
+
         <h3>Aktualne zdjęcie z gazomierza:</h3>
         <img src="{img_src}" alt="Zdjęcie licznika">
 
@@ -194,6 +197,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
+
 def get_last_known_value(file_path="odczyty24h.txt"):
     """Pobiera ostatnią poprawną wartość z historii w razie awarii API"""
     if os.path.exists(file_path):
@@ -204,6 +208,7 @@ def get_last_known_value(file_path="odczyty24h.txt"):
                 if " | " in last_line:
                     return last_line.split(" | ")[1]
     return "---"
+
 
 def main():
     image_path = get_latest_image()
@@ -216,7 +221,7 @@ def main():
         return
 
     print(f"Przetwarzanie i optymalizacja pliku: {image_path}")
-    
+
     try:
         image_bytes = optimize_image(image_path)
     except Exception as e:
@@ -256,13 +261,15 @@ def main():
     if response and response.text:
         counter_value = response.text.strip().replace(" ", "").rstrip(".")
         print(f"Odczytany stan licznika: {counter_value}")
-        
+
         clean_and_update_history(counter_value)
         update_html(now_str, counter_value, image_path, success=True)
         print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
     else:
-print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
-last_val = get_last_known_value()
-update_html(now_str, last_val, image_path, success=False)
+        print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, image_path, success=False)
+
+
 if __name__ == "__main__":
     main()
