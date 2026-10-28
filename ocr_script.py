@@ -135,4 +135,151 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         h3 {{ color: #444; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }}
         .status {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
         .timestamp {{ font-weight: bold; color: #2c3e50; }}
-        .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0;
+        .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }}
+        .uwaga {{ font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }}
+        img {{ max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
+        .chart-container {{ position: relative; margin-top: 20px; height: 260px; width: 100%; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bieżący Stan Licznika</h1>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">{timestamp}</span></div>
+        <div class="odczyt">{value} m³</div>
+        {uwaga_html}
+
+        <h3>Aktualne zdjęcie z gazomierza:</h3>
+        <img src="{img_src}" alt="Zdjęcie licznika">
+
+        <h3>Wykres zużycia (ostatnie 24h):</h3>
+        <div class="chart-container">
+            <canvas id="gasChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('gasChart').getContext('2d');
+        new Chart(ctx, {{
+            type: 'line',
+            data: {{
+                labels: {json.dumps(labels)},
+                datasets: [{{
+                    label: 'Stan licznika (m³)',
+                    data: {json.dumps(values)},
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true,
+                    pointBackgroundColor: '#27ae60'
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{
+                    legend: {{ display: false }}
+                }},
+                scales: {{
+                    y: {{
+                        beginAtZero: false,
+                        ticks: {{
+                            callback: function(value) {{ return value + ' m³'; }}
+                        }}
+                    }}
+                }}
+            }}
+        }});
+    </script>
+</body>
+</html>"""
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+
+def get_last_known_value(file_path="odczyty24h.txt"):
+    """Pobiera ostatnią poprawną wartość z historii w razie awarii API"""
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            if lines:
+                last_line = lines[-1].strip()
+                if " | " in last_line:
+                    return last_line.split(" | ")[1]
+    return "---"
+
+
+def main():
+    image_path = get_latest_image()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if not image_path:
+        print("Nie znaleziono żadnych zdjęć w folderze img_tmp.")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, "img_tmp/alg.jpg", success=False)
+        return
+
+    print(f"Przetwarzanie i optymalizacja pliku: {image_path}")
+
+    try:
+        image_bytes = optimize_image(image_path)
+    except Exception as e:
+        print(f"Błąd optymalizacji obrazu: {e}")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, image_path, success=False)
+        return
+
+    # Inicjalizacja klienta Google GenAI dla stabilnego modelu Lite
+    client = genai.Client()
+
+    response = None
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.5-flash-lite',
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type="image/jpeg",
+                    ),
+                    (
+                        "Na zdjęciu znajduje się licznik gazu. "
+                        "1. Zlokalizuj czarną lub białą tabliczkę z bębenkami cyfrowymi (cyfry główne oraz czerwone cyfry po przecinku). "
+                        "2. Odczytaj cały stan licznika. Jeśli na liczniku są zera wiodące (np. 00123), zachowaj je. "
+                        "3. Jeśli licznik posiada miejsca po przecinku (zazwyczaj 3 cyfry w czerwonej ramce), oddziel je kropką (np. 123.456). "
+                        "4. Zwróć TYLKO I WYŁĄCZNIE samą liczbę. Nie dopisuj słów m3, 'stan', spacji ani znaków nowej linii."
+                    )
+                ]
+            )
+            break
+        except Exception as e:
+            print(f"Próba {attempt + 1} nieudana: {e}")
+            if attempt < 2:
+                time.sleep(5)
+
+    if response and response.text:
+        counter_value = response.text.strip().replace(" ", "").rstrip(".")
+
+        # INTELIGENTNY FILTR KROPKI
+        if "." not in counter_value and counter_value.isdigit():
+            try:
+                number_val = int(counter_value)
+                counter_value = f"{number_val / 1000:.3f}"
+                print(f"Wykryto błąd braku kropki! Automatyczna korekta: {counter_value}")
+            except ValueError:
+                pass
+
+        print(f"Ostateczny stan licznika: {counter_value}")
+
+        clean_and_update_history(counter_value)
+        update_html(now_str, counter_value, image_path, success=True)
+        print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
+    else:
+        print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, image_path, success=False)
+
+
+if __name__ == "__main__":
+    main()
