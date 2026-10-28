@@ -40,12 +40,12 @@
 <body>
     <div class="container">
         <h1>Bieżący Stan Licznika</h1>
-        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-28 20:01:28</span></div>
-        <div class="odczyt">99.928 m³</div>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-28 20:06:48</span></div>
+        <div class="odczyt">100061 m³</div>
         
 
         <h3>Aktualne zdjęcie z gazomierza:</h3>
-        <img src="img_tmp/alg.jpg?t=1793214091" alt="Zdjęcie licznika">
+        <img src="img_tmp/alg.jpg?t=1793214410" alt="Zdjęcie licznika">
 
         <h3>Wykres zużycia (ostatnie 24h):</h3>
         <div class="chart-container">
@@ -58,10 +58,10 @@
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ["18:35", "19:56", "20:01"],
+                labels: ["18:35", "19:56", "20:01", "20:06"],
                 datasets: [{
                     label: 'Stan licznika (m³)',
-                    data: [99.928, 99.928, 99.928],
+                    data: [99.928, 99.928, 99.928, 100061.0],
                     borderColor: '#27ae60',
                     backgroundColor: 'rgba(39, 174, 96, 0.1)',
                     borderWidth: 2,
