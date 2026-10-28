@@ -34,38 +34,44 @@
         .odczyt { font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }
         .uwaga { font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }
         img { max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .chart-container { position: relative; margin-top: 20px; height: 260px; width: 100%; }
+        .chart-container { position: relative; margin-top: 10px; height: 220px; width: 100%; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Bieżący Stan Licznika</h1>
-        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-28 21:38:59</span></div>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-28 21:44:24</span></div>
         <div class="odczyt">100.761 m³</div>
         
 
         <h3>Aktualne zdjęcie z gazomierza:</h3>
-        <img src="img_tmp/alg.jpg?t=1793219942" alt="Zdjęcie licznika">
+        <img src="img_tmp/alg.jpg?t=1793220265" alt="Zdjęcie licznika">
 
-        <h3>Wykres zużycia (ostatnie 24h):</h3>
+        <h3>Skumulowany stan licznika (m³):</h3>
         <div class="chart-container">
-            <canvas id="gasChart"></canvas>
+            <canvas id="gasStateChart"></canvas>
+        </div>
+
+        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
+        <div class="chart-container">
+            <canvas id="gasDiffChart"></canvas>
         </div>
     </div>
 
     <script>
-        const ctx = document.getElementById('gasChart').getContext('2d');
-        new Chart(ctx, {
+        // WYKRES 1: Stan skumulowany licznika
+        const ctxState = document.getElementById('gasStateChart').getContext('2d');
+        new Chart(ctxState, {
             type: 'line',
             data: {
-                labels: ["18:35", "19:56", "20:01", "20:06", "20:12", "20:17", "20:23", "20:28", "20:34", "20:39", "20:44", "20:50", "20:55", "21:01", "21:06", "21:11", "21:17", "21:22", "21:28", "21:33", "21:39"],
+                labels: ["18:35", "19:56", "20:01", "20:06", "20:12", "20:17", "20:23", "20:28", "20:34", "20:39", "20:44", "20:50", "20:55", "21:01", "21:06", "21:11", "21:17", "21:22", "21:28", "21:33", "21:39", "21:44"],
                 datasets: [{
                     label: 'Stan licznika (m³)',
-                    data: [99.928, 99.928, 99.928, 100.061, 100.083, 100.083, 100.083, 100.111, 100.221, 100.393, 100.566, 100.738, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761],
+                    data: [99.928, 99.928, 99.928, 100.061, 100.083, 100.083, 100.083, 100.111, 100.221, 100.393, 100.566, 100.738, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761, 100.761],
                     borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    backgroundColor: 'rgba(39, 174, 96, 0.05)',
                     borderWidth: 2,
-                    tension: 0.2,
+                    tension: 0.1,
                     fill: true,
                     pointBackgroundColor: '#27ae60'
                 }]
@@ -73,12 +79,33 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+
+        // WYKRES 2: Zużycie chwilowe (różniczka / słupki)
+        const ctxDiff = document.getElementById('gasDiffChart').getContext('2d');
+        new Chart(ctxDiff, {
+            type: 'bar',
+            data: {
+                labels: ["19:56", "20:01", "20:06", "20:12", "20:17", "20:23", "20:28", "20:34", "20:39", "20:44", "20:50", "20:55", "21:01", "21:06", "21:11", "21:17", "21:22", "21:28", "21:33", "21:39", "21:44"],
+                datasets: [{
+                    label: 'Przyrost (m³)',
+                    data: [0.0, 0.0, 0.133, 0.022, 0.0, 0.0, 0.028, 0.11, 0.172, 0.173, 0.172, 0.023, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    backgroundColor: '#e67e22',
+                    borderColor: '#d35400',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
                     y: {
-                        beginAtZero: false,
+                        beginAtZero: true,
                         ticks: {
                             callback: function(value) { return value + ' m³'; }
                         }
