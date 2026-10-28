@@ -21,7 +21,7 @@ def get_latest_image():
 
 
 def get_history_data(file_path="odczyty24h.txt"):
-    """Pobiera dane historyczne i przygotowuje etykiety oraz wartości do wykresu"""
+    """Pobiera dane historyczne i przygotowuje dane dla obu wykresów (stan i zużycie chwilowe)"""
     labels = []
     values = []
 
@@ -36,7 +36,6 @@ def get_history_data(file_path="odczyty24h.txt"):
                     date_str = parts[0]
                     val_str = parts[1]
 
-                    # Formatujemy datę do krótkiej formy na oś X (np. 18:35)
                     dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                     short_date = dt.strftime("%H:%M")
 
@@ -44,7 +43,24 @@ def get_history_data(file_path="odczyty24h.txt"):
                     values.append(float(val_str))
                 except (ValueError, IndexError, TypeError):
                     continue
-    return labels, values
+
+    # Obliczanie różniczki (chwilowego zużycia)
+    consumption_labels = []
+    consumption_values = []
+
+    for i in range(1, len(values)):
+        diff = values[i] - values[i - 1]
+        # Zabezpieczenie przed ujemnymi wartościami (np. w przypadku resetu licznika lub korekty)
+        if diff < 0:
+            diff = 0.0
+
+        # Zaokrąglenie do 3 miejsc po przecinku, aby uniknąć błędów zmiennoprzecinkowych
+        diff = round(diff, 3)
+
+        consumption_labels.append(labels[i])
+        consumption_values.append(diff)
+
+    return labels, values, consumption_labels, consumption_values
 
 
 def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
@@ -91,7 +107,7 @@ def optimize_image(image_path, max_size=1024):
 
 
 def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
-    """Aktualizuje plik index.html nowymi danymi, statusem oraz wykresem Chart.js"""
+    """Aktualizuje plik index.html dwoma wykresami Chart.js (stan i zużycie chwilowe)"""
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
 
@@ -99,8 +115,8 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     if not success:
         uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
 
-    # Pobieramy oczyszczone dane z historii
-    labels, values = get_history_data()
+    # Pobieramy serie danych dla obu wykresów
+    labels, values, diff_labels, diff_values = get_history_data()
 
     html_content = f"""<!DOCTYPE html>
 <html lang="pl">
@@ -138,7 +154,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }}
         .uwaga {{ font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }}
         img {{ max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
-        .chart-container {{ position: relative; margin-top: 20px; height: 260px; width: 100%; }}
+        .chart-container {{ position: relative; margin-top: 10px; height: 220px; width: 100%; }}
     </style>
 </head>
 <body>
@@ -151,15 +167,21 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         <h3>Aktualne zdjęcie z gazomierza:</h3>
         <img src="{img_src}" alt="Zdjęcie licznika">
 
-        <h3>Wykres zużycia (ostatnie 24h):</h3>
+        <h3>Skumulowany stan licznika (m³):</h3>
         <div class="chart-container">
-            <canvas id="gasChart"></canvas>
+            <canvas id="gasStateChart"></canvas>
+        </div>
+
+        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
+        <div class="chart-container">
+            <canvas id="gasDiffChart"></canvas>
         </div>
     </div>
 
     <script>
-        const ctx = document.getElementById('gasChart').getContext('2d');
-        new Chart(ctx, {{
+        // WYKRES 1: Stan skumulowany licznika
+        const ctxState = document.getElementById('gasStateChart').getContext('2d');
+        new Chart(ctxState, {{
             type: 'line',
             data: {{
                 labels: {json.dumps(labels)},
@@ -167,9 +189,9 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
                     label: 'Stan licznika (m³)',
                     data: {json.dumps(values)},
                     borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    backgroundColor: 'rgba(39, 174, 96, 0.05)',
                     borderWidth: 2,
-                    tension: 0.2,
+                    tension: 0.1,
                     fill: true,
                     pointBackgroundColor: '#27ae60'
                 }}]
@@ -177,12 +199,33 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
             options: {{
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {{
-                    legend: {{ display: false }}
-                }},
+                plugins: {{ legend: {{ display: false }} }},
+                scales: {{ y: {{ beginAtZero: false }} }}
+            }}
+        }});
+
+        // WYKRES 2: Zużycie chwilowe (różniczka / słupki)
+        const ctxDiff = document.getElementById('gasDiffChart').getContext('2d');
+        new Chart(ctxDiff, {{
+            type: 'bar',
+            data: {{
+                labels: {json.dumps(diff_labels)},
+                datasets: [{{
+                    label: 'Przyrost (m³)',
+                    data: {json.dumps(diff_values)},
+                    backgroundColor: '#e67e22',
+                    borderColor: '#d35400',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{ legend: {{ display: false }} }},
                 scales: {{
                     y: {{
-                        beginAtZero: false,
+                        beginAtZero: true,
                         ticks: {{
                             callback: function(value) {{ return value + ' m³'; }}
                         }}
@@ -230,7 +273,6 @@ def main():
         update_html(now_str, last_val, image_path, success=False)
         return
 
-    # Inicjalizacja klienta Google GenAI dla stabilnego modelu Lite
     client = genai.Client()
 
     response = None
