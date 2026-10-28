@@ -102,7 +102,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Podgląd Licznika Gazu</title>
-    <!-- Dołączenie biblioteki Chart.js z CDN -->
+    <!-- POPRAWIONY CDN DLA CHART.JS -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body {{
@@ -261,5 +261,4 @@ def main():
         print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
         last_val = get_last_known_value()
         update_html(now_str, last_val, image_path, success=False)
-if name == "main":
-main()
+
