@@ -31,6 +31,7 @@ def get_history_data(file_path="odczyty24h.txt"):
                     continue
                 try:
                     parts = line.split(" | ")
+                    # NAPRAWIONE INDEKSOWANIE:
                     date_str = parts[0]
                     val_str = parts[1]
                     
@@ -40,7 +41,7 @@ def get_history_data(file_path="odczyty24h.txt"):
                     
                     labels.append(short_date)
                     values.append(float(val_str))
-                except (ValueError, IndexError):
+                except (ValueError, IndexError, TypeError):
                     continue
     return labels, values
 
@@ -57,11 +58,13 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
                 if not line:
                     continue
                 try:
-                    date_part = line.split(" | ")[0]
+                    parts = line.split(" | ")
+                    # NAPRAWIONE INDEKSOWANIE:
+                    date_part = parts[0]
                     entry_time = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
                     if entry_time >= cutoff_time:
                         updated_lines.append(line)
-                except (ValueError, IndexError):
+                except (ValueError, IndexError, TypeError):
                     continue
 
     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -102,7 +105,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Podgląd Licznika Gazu</title>
-    <!-- POPRAWIONY CDN DLA CHART.JS -->
+    <!-- Dołączenie biblioteki Chart.js z CDN -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body {{
@@ -258,7 +261,8 @@ def main():
         update_html(now_str, counter_value, image_path, success=True)
         print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
     else:
-        print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
-        last_val = get_last_known_value()
-        update_html(now_str, last_val, image_path, success=False)
-
+print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
+last_val = get_last_known_value()
+update_html(now_str, last_val, image_path, success=False)
+if __name__ == "__main__":
+    main()
