@@ -261,4 +261,5 @@ def main():
         print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
         last_val = get_last_known_value()
         update_html(now_str, last_val, image_path, success=False)
-
+if name == "main":
+main()
