@@ -2,6 +2,7 @@ import os
 import glob
 import io
 import time
+import re
 from datetime import datetime, timedelta
 from google import genai
 from google.genai import types
@@ -23,7 +24,6 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
     cutoff_time = now - timedelta(hours=24)
     updated_lines = []
 
-    # 1. Odczytaj i przefiltruj istniejącą historię
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -31,19 +31,17 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
                 if not line:
                     continue
                 try:
-                    date_part = line.split(" | ")[0]
-                    entry_time = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
+                    date_part = line.split(" | ")
+                    entry_time = datetime.strptime(date_part[0], "%Y-%m-%d %H:%M:%S")
                     if entry_time >= cutoff_time:
                         updated_lines.append(line)
                 except (ValueError, IndexError):
                     continue
 
-    # 2. Dodaj nowy odczyt
     timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
     new_entry = f"{timestamp} | {new_value}"
     updated_lines.append(new_entry)
 
-    # 3. Zapisz zaktualizowaną historię
     with open(file_path, "w", encoding="utf-8") as range_file:
         for line in updated_lines:
             range_file.write(line + "\n")
@@ -60,25 +58,100 @@ def optimize_image(image_path, max_size=1024):
         img.save(img_byte_arr, format='JPEG', quality=85)
         return img_byte_arr.getvalue()
 
+def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
+    """Aktualizuje plik index.html nowymi danymi i statusem powodzenia"""
+    # Generujemy timestamp unikalny dla obrazka (zapobiega cache'owaniu przez przeglądarkę)
+    cache_buster = int(time.time())
+    img_src = f"{image_path}?t={cache_buster}"
+    
+    # Zarządzanie div-em uwagi (pusty string jeśli sukces, widoczny tekst jeśli błąd)
+    uwaga_html = ""
+    if not success:
+        uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
+
+    # Podstawowy szkielet HTML z podmienionymi wartościami
+    html_content = f"""<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podgląd Licznika Gazu</title>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }}
+        .container {{
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }}
+        h1 {{ color: #333; font-size: 24px; margin-bottom: 10px; }}
+        .status {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
+        .timestamp {{ font-weight: bold; color: #2c3e50; }}
+        .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }}
+        .uwaga {{ font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }}
+        img {{ max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bieżący Stan Licznika</h1>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">{timestamp}</span></div>
+        <div class="odczyt">{value} m³</div>
+        {uwaga_html}
+        <h3>Aktualne zdjęcie z gazomierza:</h3>
+        <img src="{img_src}" alt="Zdjęcie licznika">
+    </div>
+</body>
+</html>"""
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+def get_last_known_value(file_path="odczyty24h.txt"):
+    """Pobiera ostatnią poprawną wartość z historii w razie awarii API"""
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            if lines:
+                last_line = lines[-1].strip()
+                if " | " in last_line:
+                    return last_line.split(" | ")[1]
+    return "---"
+
 def main():
     image_path = get_latest_image()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     if not image_path:
         print("Nie znaleziono żadnych zdjęć w folderze img_tmp.")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, "img_tmp/alg.jpg", success=False)
         return
 
     print(f"Przetwarzanie i optymalizacja pliku: {image_path}")
     
     try:
         image_bytes = optimize_image(image_path)
-        print(f"Rozmiar pliku po optymalizacji: {len(image_bytes) / 1024:.2f} KB")
     except Exception as e:
         print(f"Błąd optymalizacji obrazu: {e}")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, image_path, success=False)
         return
 
-    # Inicjalizacja klienta Gemini
     client = genai.Client()
 
-    # Wysyłanie zapytania z potrójną próbą w razie tymczasowych błędów sieciowych
     response = None
     for attempt in range(3):
         try:
@@ -103,18 +176,19 @@ def main():
             print(f"Próba {attempt + 1} nieudana: {e}")
             if attempt < 2:
                 time.sleep(5)
-            else:
-                raise e
 
     if response and response.text:
-        # Czyszczenie wyniku ze zbędnych spacji i kropek na końcu, jeśli model je dopisał
         counter_value = response.text.strip().replace(" ", "").rstrip(".")
-        
         print(f"Odczytany stan licznika: {counter_value}")
+        
+        # Sukces - aktualizujemy TXT oraz budujemy czysty HTML bez ostrzeżenia
         clean_and_update_history(counter_value)
-        print("Plik odczyty24h.txt został zaktualizowany.")
+        update_html(now_str, counter_value, image_path, success=True)
+        print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
     else:
-        print("Nie udało się uzyskać odpowiedzi od modelu Gemini.")
+        print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
+        last_val = get_last_known_value()
+        update_html(now_str, last_val, image_path, success=False)
 
 if __name__ == "__main__":
     main()
