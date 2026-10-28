@@ -12,7 +12,7 @@ jobs:
     - name: Sprawdzenie kodu repozytorium
       uses: actions/checkout@v4
       with:
-        persist-credentials: true # Wymagane do wykonania git push zaktualizowanego pliku tekstowego
+        persist-credentials: true
 
     - name: Konfiguracja Pythona
       uses: actions/setup-python@v5
@@ -29,10 +29,9 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: python ocr_script.py
 
-    - name: Zapisanie zmian w odczyty24h.txt
+    - name: Zapisanie zmian w repozytorium (TXT i HTML)
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@://github.com'
-        git add odczyty24h.txt
-        # Zatwierdź i wyślij zmiany tylko jeśli plik się zmienił
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Automatyczna aktualizacja odczytów licznika" && git push)
+        git add odczyty24h.txt index.html  # <--- TUTAJ ZMIANA (dodany index.html)
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Automatyczna aktualizacja odczytów oraz strony index.html" && git push)
