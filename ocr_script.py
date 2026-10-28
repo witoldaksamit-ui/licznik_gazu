@@ -271,7 +271,6 @@ def main():
                 pass
 
         print(f"Ostateczny stan licznika: {counter_value}")
-
         clean_and_update_history(counter_value)
         update_html(now_str, counter_value, image_path, success=True)
         print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
