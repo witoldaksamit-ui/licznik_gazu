@@ -3,7 +3,7 @@ name: Gemini OCR Automation
 on:
   push:
     paths:
-      - 'images/**' # Skrypt uruchomi się tylko, gdy dodasz coś do folderu 'images'
+      - 'img_tmp/**' # Uruchamia się tylko po dodaniu plików do img_tmp
 
 jobs:
   run-ocr:
@@ -11,6 +11,8 @@ jobs:
     steps:
     - name: Sprawdzenie kodu repozytorium
       uses: actions/checkout@v4
+      with:
+        persist-credentials: true # Wymagane do wykonania git push
 
     - name: Konfiguracja Pythona
       uses: actions/setup-python@v5
@@ -27,9 +29,10 @@ jobs:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       run: python ocr_script.py
 
-    - name: Zapisanie zmian (jeśli skrypt tworzy pliki tekstowe)
+    - name: Zapisanie zmian w odczyty24h.txt
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@://github.com'
-        git add .
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Automatyczny OCR przez Gemini" && git push)
+        git add odczyty24h.txt
+        # Zatwierdź i wyślij zmiany tylko jeśli plik się zmienił
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Automatyczna aktualizacja odczytów licznika" && git push)
