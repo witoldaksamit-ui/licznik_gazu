@@ -30,14 +30,17 @@ def get_history_data(file_path="odczyty24h.txt"):
                 if not line or " | " not in line:
                     continue
                 try:
-                    date_str, val_str = line.split(" | ")
-                    # Formatujemy datę do krótszej formy na wykres (np. 17:18)
+                    parts = line.split(" | ")
+                    date_str = parts[0]
+                    val_str = parts[1]
+                    
+                    # Formatujemy datę do krótkiej formy na oś X (np. 18:35)
                     dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
                     short_date = dt.strftime("%H:%M")
                     
                     labels.append(short_date)
                     values.append(float(val_str))
-                except ValueError:
+                except (ValueError, IndexError):
                     continue
     return labels, values
 
@@ -54,8 +57,8 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
                 if not line:
                     continue
                 try:
-                    date_part = line.split(" | ")
-                    entry_time = datetime.strptime(date_part[0], "%Y-%m-%d %H:%M:%S")
+                    date_part = line.split(" | ")[0]
+                    entry_time = datetime.strptime(date_part, "%Y-%m-%d %H:%M:%S")
                     if entry_time >= cutoff_time:
                         updated_lines.append(line)
                 except (ValueError, IndexError):
@@ -90,7 +93,7 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     if not success:
         uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
 
-    # Pobieramy dane do wykresu
+    # Pobieramy oczyszczone dane z historii
     labels, values = get_history_data()
 
     html_content = f"""<!DOCTYPE html>
@@ -219,7 +222,7 @@ def main():
         update_html(now_str, last_val, image_path, success=False)
         return
 
-    # Używamy modelu gemini-3.5-flash-lite, który u Ciebie działa bez limitów 429
+    # Stabilna, darmowa wersja Lite
     client = genai.Client()
 
     response = None
@@ -259,5 +262,3 @@ def main():
         last_val = get_last_known_value()
         update_html(now_str, last_val, image_path, success=False)
 
-if __name__ == "__main__":
-    main()
