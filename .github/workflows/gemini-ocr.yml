@@ -5,6 +5,10 @@ on:
     paths:
       - 'img_tmp/**' # Uruchamia się automatycznie po dodaniu plików do img_tmp
 
+# Wymuszenie strefy czasowej dla całej maszyny wirtualnej GitHub
+env:
+  TZ: Europe/Warsaw
+
 jobs:
   run-ocr:
     runs-on: ubuntu-latest
@@ -33,5 +37,8 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@://github.com'
-        git add odczyty24h.txt index.html  # <--- TUTAJ ZMIANA (dodany index.html)
+        
+        git add index.html
+        if [ -f odczyty24h.txt ]; then git add odczyty24h.txt; fi
+        
         git diff --quiet && git diff --staged --quiet || (git commit -m "Automatyczna aktualizacja odczytów oraz strony index.html" && git push)
