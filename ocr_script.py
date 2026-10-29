@@ -9,6 +9,8 @@ from google import genai
 from google.genai import types
 from PIL import Image
 
+MAX_JUMP_M3 = 50.0  # maksymalny sensowny przyrost między odczytami (dostosuj do swojego interwału)
+
 
 def get_latest_image():
     """Szuka najnowszego pliku graficznego w folderze img_tmp"""
@@ -30,6 +32,29 @@ def normalize_reading(raw):
     if len(digits) != 6:
         return None
     return f"{digits[:3]}.{digits[3:]}"
+
+
+def get_last_known_value(file_path="odczyty24h.txt"):
+    """Pobiera ostatnią poprawną wartość z historii w razie awarii API"""
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = [l for l in f.readlines() if l.strip()]
+            if lines:
+                last_line = lines[-1].strip()
+                if " | " in last_line:
+                    return last_line.split(" | ")[1]
+    return "---"
+
+
+def is_plausible(new_value, file_path="odczyty24h.txt"):
+    """Sprawdza, czy odczyt nie jest mniejszy od poprzedniego i nie skacze nierealistycznie."""
+    last = get_last_known_value(file_path)
+    try:
+        last_f = float(last)
+    except ValueError:
+        return True  # brak historii, nie ma z czym porównać
+    diff = float(new_value) - last_f
+    return 0 <= diff <= MAX_JUMP_M3
 
 
 def get_history_data(file_path="odczyty24h.txt"):
@@ -262,18 +287,6 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         f.write(html_content)
 
 
-def get_last_known_value(file_path="odczyty24h.txt"):
-    """Pobiera ostatnią poprawną wartość z historii w razie awarii API"""
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            if lines:
-                last_line = lines[-1].strip()
-                if " | " in last_line:
-                    return last_line.split(" | ")[1]
-    return "---"
-
-
 def main():
     image_path = get_latest_image()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -296,31 +309,38 @@ def main():
 
     client = genai.Client()
 
-    response = None
+    prompt = (
+        "Na zdjęciu jest wyświetlacz LCD licznika gazu. "
+        "Odczyt składa się z dokładnie 6 cyfr czytanych od lewej do prawej: "
+        "3 cyfry części całkowitej i 3 cyfry po przecinku. "
+        "Część po przecinku jest otoczona prostokątną ramką, ale pionowa linia ramki "
+        "NIE jest cyfrą ani kropką. Cyfry mogą być rozdzielone odstępem, który "
+        "też NIE jest cyfrą. Policz wszystkie widoczne cyfry i niczego nie dopisuj "
+        "ani nie pomijaj, w szczególności nie dodawaj zer na początku. "
+        "Zwróć TYLKO te 6 cyfr, bez kropki, spacji, jednostek ani innego tekstu."
+    )
+
+    counter_value = None
+    raw = None
     for attempt in range(3):
         try:
             response = client.models.generate_content(
                 model='gemini-3.5-flash-lite',
                 contents=[
-                    types.Part.from_bytes(
-                        data=image_bytes,
-                        mime_type="image/jpeg",
-                    ),
-                    (
-                        "Na zdjęciu jest licznik gazu z bębenkami cyfrowymi. "
-                        "Odczyt składa się zawsze z dokładnie 6 cyfr: 3 cyfry części całkowitej "
-                        "i 3 cyfry po przecinku (czerwone). Zachowaj zera wiodące. "
-                        "Zwróć TYLKO te 6 cyfr, bez kropki, spacji, jednostek ani innego tekstu."
-                    )
+                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    prompt,
                 ]
             )
-            break
+            raw = response.text
+            candidate = normalize_reading(raw)
+            if candidate and is_plausible(candidate):
+                counter_value = candidate
+                break
+            print(f"Próba {attempt + 1}: odrzucony odczyt {raw!r}")
         except Exception as e:
             print(f"Próba {attempt + 1} nieudana: {e}")
-            if attempt < 2:
-                time.sleep(5)
-
-    counter_value = normalize_reading(response.text) if response and response.text else None
+        if attempt < 2:
+            time.sleep(5)
 
     if counter_value:
         print(f"Ostateczny stan licznika: {counter_value}")
@@ -328,8 +348,7 @@ def main():
         update_html(now_str, counter_value, image_path, success=True)
         print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
     else:
-        raw = response.text if response else None
-        print(f"Nieprawidłowy lub brak odczytu (odpowiedź modelu: {raw!r}). Przywracanie starej wartości.")
+        print(f"Brak wiarygodnego odczytu (ostatnia odpowiedź modelu: {raw!r}). Przywracanie starej wartości.")
         last_val = get_last_known_value()
         update_html(now_str, last_val, image_path, success=False)
 
