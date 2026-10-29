@@ -179,12 +179,12 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
         <h3>Aktualne zdjęcie z gazomierza:</h3>
         <img src="{img_src}" alt="Zdjęcie licznika">
 
-        <h3>Skumulowany stan licznika (m³):</h3>
+        <h3>Stan licznika (m³):</h3>
         <div class="chart-container">
             <canvas id="gasStateChart"></canvas>
         </div>
 
-        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
+        <h3>Chwilowe zużycie gazu (Δ m³):</h3>
         <div class="chart-container">
             <canvas id="gasDiffChart"></canvas>
         </div>
