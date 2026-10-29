@@ -40,19 +40,19 @@
 <body>
     <div class="container">
         <h1>Bieżący Stan Licznika</h1>
-        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-29 06:57:23</span></div>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">2026-10-29 07:02:56</span></div>
         <div class="odczyt">100.979 m³</div>
         
 
         <h3>Aktualne zdjęcie z gazomierza:</h3>
-        <img src="img_tmp/alg.jpg?t=1793253446" alt="Zdjęcie licznika">
+        <img src="img_tmp/alg.jpg?t=1793253778" alt="Zdjęcie licznika">
 
-        <h3>Skumulowany stan licznika (m³):</h3>
+        <h3>Stan licznika (m³):</h3>
         <div class="chart-container">
             <canvas id="gasStateChart"></canvas>
         </div>
 
-        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
+        <h3>Chwilowe zużycie gazu (Δ m³):</h3>
         <div class="chart-container">
             <canvas id="gasDiffChart"></canvas>
         </div>
@@ -64,10 +64,10 @@
         new Chart(ctxState, {
             type: 'line',
             data: {
-                labels: ["05:47", "05:52", "05:57", "06:03", "06:08", "06:14", "06:19", "06:24", "06:30", "06:35", "06:41", "06:46", "06:52", "06:57"],
+                labels: ["05:47", "05:52", "05:57", "06:03", "06:08", "06:14", "06:19", "06:24", "06:30", "06:35", "06:41", "06:46", "06:52", "06:57", "07:02"],
                 datasets: [{
                     label: 'Stan licznika (m³)',
-                    data: [100.929, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979],
+                    data: [100.929, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979, 100.979],
                     borderColor: '#27ae60',
                     backgroundColor: 'rgba(39, 174, 96, 0.05)',
                     borderWidth: 2,
@@ -89,10 +89,10 @@
         new Chart(ctxDiff, {
             type: 'line',
             data: {
-                labels: ["05:52", "05:57", "06:03", "06:08", "06:14", "06:19", "06:24", "06:30", "06:35", "06:41", "06:46", "06:52", "06:57"],
+                labels: ["05:52", "05:57", "06:03", "06:08", "06:14", "06:19", "06:24", "06:30", "06:35", "06:41", "06:46", "06:52", "06:57", "07:02"],
                 datasets: [{
                     label: 'Przyrost (m³)',
-                    data: [0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    data: [0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
                     borderColor: '#e67e22',
                     backgroundColor: 'rgba(230, 126, 34, 0.05)',
                     borderWidth: 2,
