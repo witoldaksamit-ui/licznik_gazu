@@ -1,4 +1,5 @@
 import os
+import re
 import glob
 import io
 import time
@@ -18,6 +19,17 @@ def get_latest_image():
     if not files:
         return None
     return max(files, key=os.path.getmtime)
+
+
+def normalize_reading(raw):
+    """
+    Wyciąga cyfry z odpowiedzi modelu i zwraca stan w formacie XXX.YYY.
+    Zwraca None, jeśli liczba cyfr jest inna niż 6 (odczyt niepewny).
+    """
+    digits = re.sub(r"\D", "", raw or "")
+    if len(digits) != 6:
+        return None
+    return f"{digits[:3]}.{digits[3:]}"
 
 
 def get_history_data(file_path="odczyty24h.txt"):
@@ -286,11 +298,10 @@ def main():
                         mime_type="image/jpeg",
                     ),
                     (
-                        "Na zdjęciu znajduje się licznik gazu. "
-                        "1. Zlokalizuj czarną lub białą tabliczkę z bębenkami cyfrowymi (cyfry główne oraz czerwone cyfry po przecinku). "
-                        "2. Odczytaj cały stan licznika. Jeśli na liczniku są zera wiodące (np. 00123), zachowaj je. "
-                        "3. Jeśli licznik posiada miejsca po przecinku (zazwyczaj 3 cyfry w czerwonej ramce), oddziel je kropką (np. 123.456). "
-                        "4. Zwróć TYLKO I WYŁĄCZNIE samą liczbę. Nie dopisuj słów m3, 'stan', spacji ani znaków nowej linii."
+                        "Na zdjęciu jest licznik gazu z bębenkami cyfrowymi. "
+                        "Odczyt składa się zawsze z dokładnie 6 cyfr: 3 cyfry części całkowitej "
+                        "i 3 cyfry po przecinku (czerwone). Zachowaj zera wiodące. "
+                        "Zwróć TYLKO te 6 cyfr, bez kropki, spacji, jednostek ani innego tekstu."
                     )
                 ]
             )
@@ -300,24 +311,16 @@ def main():
             if attempt < 2:
                 time.sleep(5)
 
-    if response and response.text:
-        counter_value = response.text.strip().replace(" ", "").rstrip(".")
+    counter_value = normalize_reading(response.text) if response and response.text else None
 
-        # INTELIGENTNY FILTR KROPKI
-        if "." not in counter_value and counter_value.isdigit():
-            try:
-                number_val = int(counter_value)
-                counter_value = f"{number_val / 1000:.3f}"
-                print(f"Wykryto błąd braku kropki! Automatyczna korekta: {counter_value}")
-            except ValueError:
-                pass
-
+    if counter_value:
         print(f"Ostateczny stan licznika: {counter_value}")
         clean_and_update_history(counter_value)
         update_html(now_str, counter_value, image_path, success=True)
         print("Pliki odczyty24h.txt oraz index.html zostały pomyślnie zaktualizowane.")
     else:
-        print("Nie udało się uzyskać odpowiedzi od modelu Gemini. Przywracanie starej wartości.")
+        raw = response.text if response else None
+        print(f"Nieprawidłowy lub brak odczytu (odpowiedź modelu: {raw!r}). Przywracanie starej wartości.")
         last_val = get_last_known_value()
         update_html(now_str, last_val, image_path, success=False)
 
