@@ -119,7 +119,7 @@ def optimize_image(image_path, max_size=1024):
 
 
 def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
-    """Aktualizuje plik index.html dwoma wykresami Chart.js (stan i zużycie chwilowe)"""
+    """Aktualizuje plik index.html dwoma wykresami liniowymi Chart.js (stan i zużycie chwilowe)"""
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
 
@@ -216,19 +216,21 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
             }}
         }});
 
-        // WYKRES 2: Zużycie chwilowe (różniczka / słupki)
+        // WYKRES 2: Zużycie chwilowe (wykres liniowy)
         const ctxDiff = document.getElementById('gasDiffChart').getContext('2d');
         new Chart(ctxDiff, {{
-            type: 'bar',
+            type: 'line',
             data: {{
                 labels: {json.dumps(diff_labels)},
                 datasets: [{{
                     label: 'Przyrost (m³)',
                     data: {json.dumps(diff_values)},
-                    backgroundColor: '#e67e22',
-                    borderColor: '#d35400',
-                    borderWidth: 1,
-                    borderRadius: 4
+                    borderColor: '#e67e22',
+                    backgroundColor: 'rgba(230, 126, 34, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointBackgroundColor: '#e67e22'
                 }}]
             }},
             options: {{
