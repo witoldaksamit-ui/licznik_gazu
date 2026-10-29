@@ -205,7 +205,8 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
                     borderWidth: 2,
                     tension: 0.1,
                     fill: true,
-                    pointBackgroundColor: '#27ae60'
+                    pointRadius: 0,
+                    pointHoverRadius: 0
                 }}]
             }},
             options: {{
@@ -230,7 +231,8 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
                     borderWidth: 2,
                     tension: 0.1,
                     fill: true,
-                    pointBackgroundColor: '#e67e22'
+                    pointRadius: 0,
+                    pointHoverRadius: 0
                 }}]
             }},
             options: {{
