@@ -18,8 +18,10 @@ def get_latest_image():
     files = []
     for ext in image_extensions:
         files.extend(glob.glob(f"img_tmp/{ext}"))
+
     if not files:
         return None
+
     return max(files, key=os.path.getmtime)
 
 
@@ -87,6 +89,7 @@ def get_history_data(file_path="odczyty24h.txt"):
 
     for i in range(1, len(values)):
         diff = values[i] - values[i - 1]
+
         # Zabezpieczenie przed ujemnymi wartościami (np. w przypadku resetu licznika lub korekty)
         if diff < 0:
             diff = 0.0
@@ -104,6 +107,7 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
     """Zapisuje nowy odczyt i usuwa wpisy starsze niż 24 godziny"""
     now = datetime.now()
     cutoff_time = now - timedelta(hours=24)
+
     updated_lines = []
 
     if os.path.exists(file_path):
@@ -148,11 +152,13 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
 
-    uwaga_html = ""
-    if not success:
-        uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
+    if success:
+        status_html = '<div class="ok">✓ Ostatni odczyt się udał.</div>'
+    else:
+        status_html = '<div class="uwaga">✗ Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
 
     labels, values, diff_labels, diff_values = get_history_data()
+    usage24 = f"{sum(diff_values):.3f}"  # historia w odczyty24h.txt obejmuje ostatnie 24 h
 
     with open(template_path, "r", encoding="utf-8") as f:
         html = f.read()
@@ -160,7 +166,8 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     replacements = {
         "__TIMESTAMP__": timestamp,
         "__VALUE__": str(value),
-        "__UWAGA__": uwaga_html,
+        "__STATUS__": status_html,
+        "__USAGE24__": usage24,
         "__IMG_SRC__": img_src,
         "__STATE_LABELS__": json.dumps(labels),
         "__STATE_VALUES__": json.dumps(values),
@@ -209,6 +216,7 @@ def main():
 
     counter_value = None
     raw = None
+
     for attempt in range(3):
         try:
             response = client.models.generate_content(
@@ -226,6 +234,7 @@ def main():
             print(f"Próba {attempt + 1}: odrzucony odczyt {raw!r}")
         except Exception as e:
             print(f"Próba {attempt + 1} nieudana: {e}")
+
         if attempt < 2:
             time.sleep(5)
 
