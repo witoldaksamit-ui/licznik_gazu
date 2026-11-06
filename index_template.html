@@ -2,104 +2,139 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1A0613">
 <title>VelvetHome</title>
-<link rel="icon" type="image/png" href="https://witoldaksamit-ui.github.io/velvethome.github.io/thermometer.png">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
 :root {
-  /* Paleta bazowa Material 3 z Color.kt / Theme.kt aplikacji (bez dynamic color) */
-  --bg:#FFFBFE; --card:#F3EDF7; --text:#1C1B1F; --muted:#49454F; --line:#CAC4D0;
-  --primary:#6650a4; --on-primary:#FFFFFF; --chip:#E8DEF8;
-  --home:#1976d2; --out:#d32f2f; --gas:#27ae60; --flow:#e67e22;
-  --warn-bg:#fef5e7; --warn:#b9770e;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg:#1C1B1F; --card:#2B2930; --text:#E6E1E5; --muted:#CAC4D0; --line:#49454F;
-          --primary:#D0BCFF; --on-primary:#381E72; --chip:#4A4458;
-          --home:#64b5f6; --out:#ef7b7b; --gas:#4cc38a; --flow:#f0a05a;
-          --warn-bg:#3a2e17; --warn:#f0c070; }
+  /* Paleta z aplikacji VelvetHomeTemperature3 (MainActivity.kt) */
+  --bg-top:#4A1233; --bg-bottom:#1A0613;
+  --cream:#F7E9D7; --gold:#FFC96B;
+  --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
+  --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
+  --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
+  --err:#FF8A80;
 }
 * { box-sizing:border-box; }
-body { margin:0; background:var(--bg); color:var(--text); font-family:Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
-header { padding:16px 20px; font-size:22px; font-weight:500; background:var(--bg); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
-main { max-width:720px; margin:0 auto; padding:16px; display:grid; gap:16px; }
-.card { background:var(--card); border-radius:20px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
-h2 { margin:0 0 4px; font-size:16px; font-weight:600; }
-h3 { margin:18px 0 6px; font-size:14px; font-weight:500; color:var(--muted); }
-.sub { color:var(--muted); font-size:13px; }
+html { background:var(--bg-bottom); }
+body {
+  margin:0; min-height:100vh; color:var(--cream);
+  background:linear-gradient(180deg, var(--bg-top), var(--bg-bottom)) fixed;
+  font-family:Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+header { text-align:center; padding:28px 16px 8px; }
+header img { width:72px; height:72px; border-radius:18px; display:block; margin:0 auto 12px; box-shadow:0 4px 18px rgba(0,0,0,.35); }
+header h1 { margin:0; font-size:34px; font-weight:700; letter-spacing:2px; color:var(--cream); }
+header p { margin:6px 0 0; font-size:14px; letter-spacing:1px; color:var(--gold); opacity:.85; }
+main { max-width:720px; margin:0 auto; padding:16px; display:grid; gap:24px; }
+section { display:grid; gap:16px; }
+h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:center; }
+.sub { color:var(--cream); opacity:.7; font-size:14px; text-align:center; }
+
+/* kafelki jak karta "BIEŻĄCY ODCZYT" */
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.tile { border-radius:16px; padding:12px; background:var(--bg); text-align:center; }
-.tile .lbl { font-size:12px; color:var(--muted); }
-.tile .val { font-size:24px; font-weight:700; margin-top:4px; }
-.tile .when { font-size:11px; color:var(--muted); margin-top:2px; }
-.chips { display:flex; gap:8px; margin:10px 0; }
-.chip { border:0; border-radius:999px; padding:7px 14px; background:var(--chip); color:var(--text); font-size:13px; cursor:pointer; }
-.chip.active { background:var(--primary); color:var(--on-primary); }
+.tile { background:var(--panel); border-radius:16px; padding:16px 8px; text-align:center; }
+.tile .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
+.tile .val { font-size:26px; font-weight:700; margin-top:10px; letter-spacing:.5px; }
+.tile .when { font-size:11px; color:var(--cream); opacity:.7; margin-top:4px; }
+
+/* chipy zakresu jak FilterChip */
+.chips { display:flex; justify-content:space-evenly; gap:8px; }
+.chip { background:transparent; color:var(--cream); border:1px solid rgba(247,233,215,.5); border-radius:8px;
+        padding:7px 14px; font-size:12px; font-family:inherit; cursor:pointer; }
+.chip.active { background:var(--plum); border-color:var(--gold); }
+
+/* wykresy: białe karty z ciemnym tekstem, jak w aplikacji */
+.chartcard { background:var(--chart-bg); color:var(--chart-text); border-radius:16px; padding:12px; }
+.chartcard h3 { margin:0 0 8px; font-size:16px; font-weight:700; color:var(--chart-text); }
 .chart { position:relative; height:200px; }
-.stats { font-size:12px; color:var(--muted); margin:6px 0 2px; }
-.ok { font-size:13px; color:var(--gas); background:var(--chip); padding:8px 10px; border-radius:10px; margin:10px 0; }
-.usage { display:flex; justify-content:space-between; align-items:baseline; background:var(--bg); border-radius:14px; padding:12px 14px; margin:10px 0; }
-.usage b { font-size:22px; color:var(--flow); }
-.uwaga { font-size:13px; color:var(--warn); background:var(--warn-bg); padding:8px 10px; border-radius:10px; margin:10px 0; }
-img { max-width:100%; height:auto; border-radius:12px; display:block; }
+.stats { display:flex; justify-content:space-evenly; margin-top:8px; text-align:center; font-size:12px; color:rgba(58,58,58,.7); }
+.stats b { display:block; font-size:18px; margin-top:2px; }
+
+.ok { font-size:13px; color:var(--gold); background:var(--panel); padding:10px 12px; border-radius:12px; text-align:center; }
+.uwaga { font-size:13px; color:var(--err); background:var(--panel); padding:10px 12px; border-radius:12px; text-align:center; }
+.usage { display:flex; justify-content:space-between; align-items:baseline; background:var(--panel); border-radius:16px; padding:16px 20px; }
+.usage .sub { text-align:left; }
+.usage b { font-size:22px; color:var(--gold); }
+.photo { background:var(--panel); border-radius:16px; padding:12px; }
+.photo h3 { margin:0 0 10px; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); text-align:center; }
+img.meter { max-width:100%; height:auto; border-radius:12px; display:block; margin:0 auto; }
 </style>
 </head>
 <body>
-<header>VelvetHome</header>
+<header>
+  <img src="favicon-192.png" alt="VelvetHome">
+  <h1>VelvetHome</h1>
+  <p>temperatura w Twoim domu</p>
+</header>
 <main>
-  <section class="card">
+  <section>
     <div class="tiles">
       <div class="tile"><div class="lbl">Dom</div><div class="val" id="nowHome" style="color:var(--home)">–</div><div class="when" id="whenHome"></div></div>
       <div class="tile"><div class="lbl">Dwór</div><div class="val" id="nowOut" style="color:var(--out)">–</div><div class="when" id="whenOut"></div></div>
-      <div class="tile"><div class="lbl">Gaz</div><div class="val" style="color:var(--gas)">__VALUE__</div><div class="when">m³ · __TIMESTAMP__</div></div>
+      <div class="tile"><div class="lbl">Gaz</div><div class="val">__VALUE__</div><div class="when">m³ · __TIMESTAMP__</div></div>
     </div>
   </section>
 
-  <section class="card">
+  <section>
     <h2>Temperatura</h2>
     <div class="chips">
-      <button class="chip" data-h="6">6 h</button>
-      <button class="chip" data-h="12">12 h</button>
-      <button class="chip" data-h="24">24 h</button>
+      <button class="chip" data-h="24">Ostatnie 24h</button>
+      <button class="chip" data-h="12">Ostatnie 12h</button>
+      <button class="chip" data-h="6">Ostatnie 6h</button>
     </div>
-    <h3>Dom</h3>
-    <div class="chart"><canvas id="chHome"></canvas></div>
-    <div class="stats" id="stHome"></div>
-    <h3>Dwór</h3>
-    <div class="chart"><canvas id="chOut"></canvas></div>
-    <div class="stats" id="stOut"></div>
+    <div class="chartcard">
+      <h3>Dom</h3>
+      <div class="chart"><canvas id="chHome"></canvas></div>
+      <div class="stats" id="stHome"></div>
+    </div>
+    <div class="chartcard">
+      <h3>Dwór</h3>
+      <div class="chart"><canvas id="chOut"></canvas></div>
+      <div class="stats" id="stOut"></div>
+    </div>
   </section>
 
-  <section class="card">
-    <h2>Licznik gazu</h2>
+  <section>
+    <h2>Stan Licznika Gazu</h2>
     <div class="sub">Ostatnia aktualizacja: __TIMESTAMP__</div>
     __STATUS__
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>__USAGE24__ m³</b></div>
-    <h3>Aktualne zdjęcie z gazomierza</h3>
-    <img src="__IMG_SRC__" alt="Zdjęcie licznika">
-    <h3>Skumulowany stan licznika (m³)</h3>
-    <div class="chart"><canvas id="gasStateChart"></canvas></div>
-    <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³)</h3>
-    <div class="chart"><canvas id="gasDiffChart"></canvas></div>
+    <div class="photo">
+      <h3>Aktualne zdjęcie z gazomierza</h3>
+      <img class="meter" src="__IMG_SRC__" alt="Zdjęcie licznika">
+    </div>
+    <div class="chartcard">
+      <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
+      <div class="chart"><canvas id="gasStateChart"></canvas></div>
+    </div>
+    <div class="chartcard">
+      <h3>Chwilowe zużycie gazu – ostatnie 24h (Δ m³)</h3>
+      <div class="chart"><canvas id="gasDiffChart"></canvas></div>
+    </div>
   </section>
 </main>
 
 <script>
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const grid = css('--line'), tick = css('--muted');
+const grid = 'rgba(0,0,0,0.12)', tick = 'rgba(58,58,58,0.8)';
 
 // ---------- GAZ (dane wstawiane przez ocr_script.py) ----------
 function gasChart(id, labels, data, color, zero, unit) {
   new Chart(document.getElementById(id), {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color + '14', borderWidth: 2, tension: 0.1, fill: true, pointRadius: 0, pointHoverRadius: 0 }] },
+    data: { labels, datasets: [{ data, borderColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 0, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { color: grid } },
+      scales: { x: { ticks: { color: tick, maxTicksLimit: 4 }, grid: { color: grid } },
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => v + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', __STATE_LABELS__, __STATE_VALUES__, css('--gas'), false, '');
+gasChart('gasStateChart', __STATE_LABELS__, __STATE_VALUES__, css('--level'), false, '');
 gasChart('gasDiffChart', __DIFF_LABELS__, __DIFF_VALUES__, css('--flow'), true, ' m³');
 
 // ---------- TEMPERATURA (pobierana z repo velvethome.github.io) ----------
@@ -128,32 +163,33 @@ function parse(text) {
 function tempChart(id, color) {
   return new Chart(document.getElementById(id), {
     type: 'line',
-    data: { datasets: [{ data: [], borderColor: color, backgroundColor: color + '14', borderWidth: 2, tension: 0.2, fill: true, pointRadius: 0, pointHoverRadius: 4 }] },
+    data: { datasets: [{ data: [], borderColor: color, borderWidth: 3, tension: 0.35, cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
     options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
         label: i => i.parsed.y.toFixed(1) + ' °C' } } },
-      scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 6, callback: v => hhmm(v) }, grid: { color: grid } },
+      scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
                 y: { ticks: { color: tick, callback: v => v + '°' }, grid: { color: grid } } } }
   });
 }
 const chHome = tempChart('chHome', css('--home')), chOut = tempChart('chOut', css('--out'));
 
-function show(chart, key, statsId) {
+function show(chart, key, statsId, color) {
   const now = Date.now(), from = now - hours * 3600000;
   const pts = points.filter(p => p.t >= from && p[key] !== null).map(p => ({ x: p.t, y: p[key] }));
   chart.data.datasets[0].data = pts;
   chart.options.scales.x.min = from; chart.options.scales.x.max = now;
   chart.update();
   const el = document.getElementById(statsId);
-  if (!pts.length) { el.textContent = 'Brak danych w wybranym zakresie'; return; }
+  if (!pts.length) { el.textContent = 'Brak danych dla wybranego zakresu.'; return; }
   const v = pts.map(p => p.y);
-  el.textContent = `min ${Math.min(...v).toFixed(1)}° · max ${Math.max(...v).toFixed(1)}° · śr. ${(v.reduce((a, b) => a + b, 0) / v.length).toFixed(1)}°`;
+  el.innerHTML = `<div>Minimum<b style="color:${color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
+                 `<div>Maksimum<b style="color:${color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
 }
 function redraw() {
   document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
-  show(chHome, 'h', 'stHome'); show(chOut, 'o', 'stOut');
+  show(chHome, 'h', 'stHome', css('--home')); show(chOut, 'o', 'stOut', css('--out'));
 }
 document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
   hours = Number(b.dataset.h);
