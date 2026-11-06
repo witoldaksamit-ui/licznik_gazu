@@ -7,20 +7,22 @@
 <link rel="icon" type="image/png" href="https://witoldaksamit-ui.github.io/velvethome.github.io/thermometer.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <style>
-/* Kolory – podmień na wartości z Color.kt / Theme.kt aplikacji */
 :root {
-  --bg:#f4f6fa; --card:#ffffff; --text:#1b1f27; --muted:#667085; --line:#e4e7ec;
-  --home:#1976d2; --out:#d32f2f; --gas:#27ae60; --flow:#e67e22; --chip:#e8eef8;
+  /* Paleta bazowa Material 3 z Color.kt / Theme.kt aplikacji (bez dynamic color) */
+  --bg:#FFFBFE; --card:#F3EDF7; --text:#1C1B1F; --muted:#49454F; --line:#CAC4D0;
+  --primary:#6650a4; --on-primary:#FFFFFF; --chip:#E8DEF8;
+  --home:#1976d2; --out:#d32f2f; --gas:#27ae60; --flow:#e67e22;
   --warn-bg:#fef5e7; --warn:#b9770e;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg:#12151b; --card:#1c2029; --text:#e8eaf0; --muted:#9aa3b2; --line:#2b303b;
-          --home:#64b5f6; --out:#ef7b7b; --gas:#4cc38a; --flow:#f0a05a; --chip:#27303f;
+  :root { --bg:#1C1B1F; --card:#2B2930; --text:#E6E1E5; --muted:#CAC4D0; --line:#49454F;
+          --primary:#D0BCFF; --on-primary:#381E72; --chip:#4A4458;
+          --home:#64b5f6; --out:#ef7b7b; --gas:#4cc38a; --flow:#f0a05a;
           --warn-bg:#3a2e17; --warn:#f0c070; }
 }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--bg); color:var(--text); font-family:Roboto, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
-header { padding:16px 20px; font-size:20px; font-weight:600; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+header { padding:16px 20px; font-size:22px; font-weight:500; background:var(--bg); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
 main { max-width:720px; margin:0 auto; padding:16px; display:grid; gap:16px; }
 .card { background:var(--card); border-radius:20px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
 h2 { margin:0 0 4px; font-size:16px; font-weight:600; }
@@ -33,9 +35,12 @@ h3 { margin:18px 0 6px; font-size:14px; font-weight:500; color:var(--muted); }
 .tile .when { font-size:11px; color:var(--muted); margin-top:2px; }
 .chips { display:flex; gap:8px; margin:10px 0; }
 .chip { border:0; border-radius:999px; padding:7px 14px; background:var(--chip); color:var(--text); font-size:13px; cursor:pointer; }
-.chip.active { background:var(--home); color:#fff; }
+.chip.active { background:var(--primary); color:var(--on-primary); }
 .chart { position:relative; height:200px; }
 .stats { font-size:12px; color:var(--muted); margin:6px 0 2px; }
+.ok { font-size:13px; color:var(--gas); background:var(--chip); padding:8px 10px; border-radius:10px; margin:10px 0; }
+.usage { display:flex; justify-content:space-between; align-items:baseline; background:var(--bg); border-radius:14px; padding:12px 14px; margin:10px 0; }
+.usage b { font-size:22px; color:var(--flow); }
 .uwaga { font-size:13px; color:var(--warn); background:var(--warn-bg); padding:8px 10px; border-radius:10px; margin:10px 0; }
 img { max-width:100%; height:auto; border-radius:12px; display:block; }
 </style>
@@ -69,7 +74,8 @@ img { max-width:100%; height:auto; border-radius:12px; display:block; }
   <section class="card">
     <h2>Licznik gazu</h2>
     <div class="sub">Ostatnia aktualizacja: __TIMESTAMP__</div>
-    __UWAGA__
+    __STATUS__
+    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>__USAGE24__ m³</b></div>
     <h3>Aktualne zdjęcie z gazomierza</h3>
     <img src="__IMG_SRC__" alt="Zdjęcie licznika">
     <h3>Skumulowany stan licznika (m³)</h3>
