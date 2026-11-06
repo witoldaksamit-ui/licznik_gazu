@@ -143,8 +143,8 @@ def optimize_image(image_path, max_size=1024):
         return img_byte_arr.getvalue()
 
 
-def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
-    """Aktualizuje plik index.html dwoma wykresami liniowymi Chart.js (stan i zużycie chwilowe)"""
+def update_html(timestamp, value, image_path, success=True, file_path="index.html", template_path="index_template.html"):
+    """Generuje index.html z szablonu index_template.html (gaz + temperatura)"""
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
 
@@ -152,139 +152,26 @@ def update_html(timestamp, value, image_path, success=True, file_path="index.htm
     if not success:
         uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
 
-    # Pobieramy serie danych dla obu wykresów
     labels, values, diff_labels, diff_values = get_history_data()
 
-    html_content = f"""<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podgląd Licznika Gazu</title>
-    <!-- Dołączenie biblioteki Chart.js z CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }}
-        .container {{
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 550px;
-            width: 100%;
-            margin: 20px;
-        }}
-        h1 {{ color: #333; font-size: 24px; margin-bottom: 10px; }}
-        h3 {{ color: #444; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }}
-        .status {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
-        .timestamp {{ font-weight: bold; color: #2c3e50; }}
-        .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }}
-        .uwaga {{ font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }}
-        img {{ max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
-        .chart-container {{ position: relative; margin-top: 10px; height: 220px; width: 100%; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Bieżący Stan Licznika</h1>
-        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">{timestamp}</span></div>
-        <div class="odczyt">{value} m³</div>
-        {uwaga_html}
+    with open(template_path, "r", encoding="utf-8") as f:
+        html = f.read()
 
-        <h3>Aktualne zdjęcie z gazomierza:</h3>
-        <img src="{img_src}" alt="Zdjęcie licznika">
-
-        <h3>Skumulowany stan licznika (m³):</h3>
-        <div class="chart-container">
-            <canvas id="gasStateChart"></canvas>
-        </div>
-
-        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
-        <div class="chart-container">
-            <canvas id="gasDiffChart"></canvas>
-        </div>
-    </div>
-
-    <script>
-        // WYKRES 1: Stan skumulowany licznika
-        const ctxState = document.getElementById('gasStateChart').getContext('2d');
-        new Chart(ctxState, {{
-            type: 'line',
-            data: {{
-                labels: {json.dumps(labels)},
-                datasets: [{{
-                    label: 'Stan licznika (m³)',
-                    data: {json.dumps(values)},
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39, 174, 96, 0.05)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: true,
-                    pointRadius: 0,
-                    pointHoverRadius: 0
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {{ legend: {{ display: false }} }},
-                scales: {{ y: {{ beginAtZero: false }} }}
-            }}
-        }});
-
-        // WYKRES 2: Zużycie chwilowe (wykres liniowy)
-        const ctxDiff = document.getElementById('gasDiffChart').getContext('2d');
-        new Chart(ctxDiff, {{
-            type: 'line',
-            data: {{
-                labels: {json.dumps(diff_labels)},
-                datasets: [{{
-                    label: 'Przyrost (m³)',
-                    data: {json.dumps(diff_values)},
-                    borderColor: '#e67e22',
-                    backgroundColor: 'rgba(230, 126, 34, 0.05)',
-                    borderWidth: 2,
-                    tension: 0.1,
-                    fill: true,
-                    pointRadius: 0,
-                    pointHoverRadius: 0
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {{ legend: {{ display: false }} }},
-                scales: {{
-                    y: {{
-                        beginAtZero: true,
-                        ticks: {{
-                            callback: function(value) {{ return value + ' m³'; }}
-                        }}
-                    }}
-                }}
-            }}
-        }});
-
-        // Automatyczne odświeżanie co 60 sekund (z omijaniem cache)
-        setTimeout(function() {{
-            window.location.href = window.location.pathname + '?t=' + Date.now();
-        }}, 60000);
-    </script>
-</body>
-</html>"""
+    replacements = {
+        "__TIMESTAMP__": timestamp,
+        "__VALUE__": str(value),
+        "__UWAGA__": uwaga_html,
+        "__IMG_SRC__": img_src,
+        "__STATE_LABELS__": json.dumps(labels),
+        "__STATE_VALUES__": json.dumps(values),
+        "__DIFF_LABELS__": json.dumps(diff_labels),
+        "__DIFF_VALUES__": json.dumps(diff_values),
+    }
+    for key, val in replacements.items():
+        html = html.replace(key, val)
 
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+        f.write(html)
 
 
 def main():
