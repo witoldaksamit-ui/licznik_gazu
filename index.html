@@ -77,7 +77,7 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
     <div class="tiles">
       <div class="tile"><div class="lbl">Dom</div><div class="val" id="nowHome" style="color:var(--home)">–</div><div class="when" id="whenHome"></div></div>
       <div class="tile"><div class="lbl">Dwór</div><div class="val" id="nowOut" style="color:var(--out)">–</div><div class="when" id="whenOut"></div></div>
-      <div class="tile"><div class="lbl">Gaz</div><div class="val">143.494</div><div class="when">m³ · 2026-11-08 16:21:52</div></div>
+      <div class="tile"><div class="lbl">Gaz</div><div class="val">143.854</div><div class="when">m³ · 2026-11-08 16:51:37</div></div>
     </div>
   </section>
 
@@ -102,12 +102,12 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section>
     <h2>Stan Licznika Gazu</h2>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-08 16:21:52</div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-08 16:51:37</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
-    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>0.780 m³</b></div>
+    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>1.140 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1794151314" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1794153099" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -134,8 +134,8 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => v + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["11:57", "12:23", "12:53", "13:23", "14:22", "14:52", "15:22", "15:51", "16:21"], [142.714, 142.817, 142.817, 142.817, 142.834, 143.202, 143.202, 143.202, 143.494], css('--level'), false, '');
-gasChart('gasDiffChart', ["12:23", "12:53", "13:23", "14:22", "14:52", "15:22", "15:51", "16:21"], [0.103, 0.0, 0.0, 0.017, 0.368, 0.0, 0.0, 0.292], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["11:57", "12:23", "12:53", "13:23", "14:22", "14:52", "15:22", "15:51", "16:21", "16:51"], [142.714, 142.817, 142.817, 142.817, 142.834, 143.202, 143.202, 143.202, 143.494, 143.854], css('--level'), false, '');
+gasChart('gasDiffChart', ["12:23", "12:53", "13:23", "14:22", "14:52", "15:22", "15:51", "16:21", "16:51"], [0.103, 0.0, 0.0, 0.017, 0.368, 0.0, 0.0, 0.292, 0.36], css('--flow'), true, ' m³');
 
 // ---------- TEMPERATURA (pobierana z repo velvethome.github.io) ----------
 const TEMP_URL = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/temperatures.txt';
