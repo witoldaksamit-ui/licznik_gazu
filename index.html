@@ -143,6 +143,18 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 </main>
 
 <script>
+  window.addEventListener('error', e => {
+  const d = document.createElement('div');
+  d.className = 'uwaga';
+  d.textContent = 'Błąd skryptu: ' + e.message + ' (linia ' + e.lineno + ')';
+  document.querySelector('main').prepend(d);
+});
+window.addEventListener('unhandledrejection', e => {
+  const d = document.createElement('div');
+  d.className = 'uwaga';
+  d.textContent = 'Błąd: ' + (e.reason && e.reason.message || e.reason);
+  document.querySelector('main').prepend(d);
+});
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const grid = 'rgba(0,0,0,0.12)', tick = 'rgba(58,58,58,0.8)';
 
