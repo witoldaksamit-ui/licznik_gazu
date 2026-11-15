@@ -17,7 +17,6 @@
   --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
-  --pralnia:#00897B; --sypialnia:#D81B60;
   --err:#FF8A80;
 }
 * { box-sizing:border-box; }
@@ -39,13 +38,10 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 
 /* kafelki jak karta "BIEŻĄCY ODCZYT" */
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.tiles.two { grid-template-columns:repeat(2,1fr); margin-top:10px; }
 .tile { background:var(--panel); border-radius:16px; padding:16px 8px; text-align:center; }
 .tile .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
 .tile .val { font-size:26px; font-weight:700; margin-top:10px; letter-spacing:.5px; }
-.tile .hum { font-size:14px; font-weight:700; margin-top:6px; color:var(--cream); opacity:.9; min-height:18px; }
 .tile .when { font-size:11px; color:var(--cream); opacity:.7; margin-top:4px; }
-.tile .when.stale { color:var(--err); opacity:1; }
 
 /* chipy zakresu jak FilterChip */
 .chips { display:flex; justify-content:space-evenly; gap:8px; }
@@ -83,10 +79,6 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
       <div class="tile"><div class="lbl">Dwór</div><div class="val" id="nowOut" style="color:var(--out)">–</div><div class="when" id="whenOut"></div></div>
       <div class="tile"><div class="lbl">Gaz</div><div class="val">174.925</div><div class="when">m³ · 2026-11-15 19:09:29</div></div>
     </div>
-    <div class="tiles two">
-      <div class="tile"><div class="lbl">Pralnia</div><div class="val" id="t_pralnia" style="color:var(--pralnia)">–</div><div class="hum" id="h_pralnia"></div><div class="when" id="w_pralnia"></div></div>
-      <div class="tile"><div class="lbl">Sypialnia</div><div class="val" id="t_sypialnia" style="color:var(--sypialnia)">–</div><div class="hum" id="h_sypialnia"></div><div class="when" id="w_sypialnia"></div></div>
-    </div>
   </section>
 
   <section>
@@ -105,20 +97,6 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
       <h3>Dwór</h3>
       <div class="chart"><canvas id="chOut"></canvas></div>
       <div class="stats" id="stOut"></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>Pralnia i sypialnia</h2>
-    <div class="chartcard">
-      <h3>Temperatura (°C)</h3>
-      <div class="chart"><canvas id="chSensTemp"></canvas></div>
-      <div class="stats" id="stSensTemp"></div>
-    </div>
-    <div class="chartcard">
-      <h3>Wilgotność (%)</h3>
-      <div class="chart"><canvas id="chSensHum"></canvas></div>
-      <div class="stats" id="stSensHum"></div>
     </div>
   </section>
 
@@ -143,18 +121,6 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 </main>
 
 <script>
-  window.addEventListener('error', e => {
-  const d = document.createElement('div');
-  d.className = 'uwaga';
-  d.textContent = 'Błąd skryptu: ' + e.message + ' (linia ' + e.lineno + ')';
-  document.querySelector('main').prepend(d);
-});
-window.addEventListener('unhandledrejection', e => {
-  const d = document.createElement('div');
-  d.className = 'uwaga';
-  d.textContent = 'Błąd: ' + (e.reason && e.reason.message || e.reason);
-  document.querySelector('main').prepend(d);
-});
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const grid = 'rgba(0,0,0,0.12)', tick = 'rgba(58,58,58,0.8)';
 
@@ -174,4 +140,79 @@ gasChart('gasDiffChart', ["19:45", "20:15", "20:44", "21:14", "21:44", "22:14", 
 // ---------- TEMPERATURA (pobierana z repo velvethome.github.io) ----------
 const TEMP_URL = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/temperatures.txt';
 const hhmm = t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-let points = [], hours =
+let points = [], hours = 24;
+try { hours = Number(localStorage.getItem('range')) || 24; } catch (e) {}
+
+function parseTs(s) {
+  let d = Date.parse(s);
+  if (isNaN(d)) d = Date.parse(s.replace(' ', 'T'));
+  if (isNaN(d)) { const n = Number(s); if (!isNaN(n)) d = n > 1e12 ? n : n * 1000; }
+  return d;
+}
+function parse(text) {
+  const out = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const p = raw.trim().split(/[,\t]/).map(s => s.trim());
+    if (p.length < 3 || raw.startsWith('#')) continue;
+    const t = parseTs(p[0]), h = parseFloat(p[1]), o = parseFloat(p[2]);
+    if (!isNaN(t)) out.push({ t, h: isNaN(h) ? null : h, o: isNaN(o) ? null : o });
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+
+function tempChart(id, color) {
+  return new Chart(document.getElementById(id), {
+    type: 'line',
+    data: { datasets: [{ data: [], borderColor: color, borderWidth: 3, tension: 0.35, cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
+    options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
+        label: i => i.parsed.y.toFixed(1) + ' °C' } } },
+      scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
+                y: { ticks: { color: tick, callback: v => v + '°' }, grid: { color: grid } } } }
+  });
+}
+const chHome = tempChart('chHome', css('--home')), chOut = tempChart('chOut', css('--out'));
+
+function show(chart, key, statsId, color) {
+  const now = Date.now(), from = now - hours * 3600000;
+  const pts = points.filter(p => p.t >= from && p[key] !== null).map(p => ({ x: p.t, y: p[key] }));
+  chart.data.datasets[0].data = pts;
+  chart.options.scales.x.min = from; chart.options.scales.x.max = now;
+  chart.update();
+  const el = document.getElementById(statsId);
+  if (!pts.length) { el.textContent = 'Brak danych dla wybranego zakresu.'; return; }
+  const v = pts.map(p => p.y);
+  el.innerHTML = `<div>Minimum<b style="color:${color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
+                 `<div>Maksimum<b style="color:${color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
+}
+function redraw() {
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
+  show(chHome, 'h', 'stHome', css('--home')); show(chOut, 'o', 'stOut', css('--out'));
+}
+document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+  hours = Number(b.dataset.h);
+  try { localStorage.setItem('range', hours); } catch (e) {}
+  redraw();
+}));
+
+function latest(key) { for (let i = points.length - 1; i >= 0; i--) if (points[i][key] !== null) return points[i]; return null; }
+function tiles() {
+  for (const [key, valId, whenId] of [['h', 'nowHome', 'whenHome'], ['o', 'nowOut', 'whenOut']]) {
+    const p = latest(key);
+    document.getElementById(valId).textContent = p ? p[key].toFixed(1) + '°' : '–';
+    document.getElementById(whenId).textContent = p ? hhmm(p.t) : 'brak danych';
+  }
+}
+redraw();
+fetch(TEMP_URL + '?ts=' + Date.now(), { cache: 'no-store' })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(txt => { points = parse(txt); tiles(); redraw(); })
+  .catch(() => { document.getElementById('stHome').textContent = document.getElementById('stOut').textContent = 'Nie udało się pobrać danych temperatury'; });
+
+// Odświeżanie co 60 s (z omijaniem cache)
+setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 60000);
+</script>
+</body>
+</html>
