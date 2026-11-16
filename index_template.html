@@ -17,6 +17,7 @@
   --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
+  --bed:#EC407A; --laundry:#26A69A;
   --err:#FF8A80;
 }
 * { box-sizing:border-box; }
@@ -38,9 +39,11 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 
 /* kafelki jak karta "BIEŻĄCY ODCZYT" */
 .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.tiles.two { grid-template-columns:repeat(2,1fr); }
 .tile { background:var(--panel); border-radius:16px; padding:16px 8px; text-align:center; }
 .tile .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
 .tile .val { font-size:26px; font-weight:700; margin-top:10px; letter-spacing:.5px; }
+.tile .hum { font-size:13px; color:var(--cream); opacity:.85; margin-top:4px; }
 .tile .when { font-size:11px; color:var(--cream); opacity:.7; margin-top:4px; }
 
 /* chipy zakresu jak FilterChip */
@@ -79,6 +82,10 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
       <div class="tile"><div class="lbl">Dwór</div><div class="val" id="nowOut" style="color:var(--out)">–</div><div class="when" id="whenOut"></div></div>
       <div class="tile"><div class="lbl">Gaz</div><div class="val">__VALUE__</div><div class="when">m³ · __TIMESTAMP__</div></div>
     </div>
+    <div class="tiles two">
+      <div class="tile"><div class="lbl">Sypialnia</div><div class="val" id="nowTemp_bed" style="color:var(--bed)">–</div><div class="hum" id="nowHum_bed"></div><div class="when" id="when_bed"></div></div>
+      <div class="tile"><div class="lbl">Pralnia</div><div class="val" id="nowTemp_lau" style="color:var(--laundry)">–</div><div class="hum" id="nowHum_lau"></div><div class="when" id="when_lau"></div></div>
+    </div>
   </section>
 
   <section>
@@ -97,6 +104,20 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
       <h3>Dwór</h3>
       <div class="chart"><canvas id="chOut"></canvas></div>
       <div class="stats" id="stOut"></div>
+    </div>
+    <div class="chartcard">
+      <h3>Sypialnia</h3>
+      <div class="chart"><canvas id="ch_bed"></canvas></div>
+      <div class="stats" id="st_bed"></div>
+    </div>
+    <div class="chartcard">
+      <h3>Pralnia</h3>
+      <div class="chart"><canvas id="ch_lau"></canvas></div>
+      <div class="stats" id="st_lau"></div>
+    </div>
+    <div class="chartcard">
+      <h3>Wilgotność (sypialnia i pralnia)</h3>
+      <div class="chart"><canvas id="chHum"></canvas></div>
     </div>
   </section>
 
@@ -175,6 +196,70 @@ function tempChart(id, color) {
 }
 const chHome = tempChart('chHome', css('--home')), chOut = tempChart('chOut', css('--out'));
 
+// ---------- CZUJNIKI: SYPIALNIA I PRALNIA (czas,temperatura,wilgotność) ----------
+const SENSOR_BASE = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/';
+const SENSORS = [
+  { id: 'bed', name: 'Sypialnia', url: SENSOR_BASE + 'temperatures_sypialnia.txt', color: css('--bed'), rows: [] },
+  { id: 'lau', name: 'Pralnia',   url: SENSOR_BASE + 'temperatures_pralnia.txt',   color: css('--laundry'), rows: [] }
+];
+
+function parseSensor(text) {
+  const out = [];
+  for (const raw of text.split(/\r?\n/)) {
+    if (!raw.trim() || raw.startsWith('#')) continue;
+    const p = raw.trim().split(',').map(s => s.trim());
+    const t = parseTs(p[0]), temp = parseFloat(p[1]), hum = parseFloat(p[2]);
+    if (!isNaN(t) && !isNaN(temp)) out.push({ t, temp, hum: isNaN(hum) ? null : hum });
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+
+SENSORS.forEach(s => { s.chart = tempChart('ch_' + s.id, s.color); });
+
+const chHum = new Chart(document.getElementById('chHum'), {
+  type: 'line',
+  data: { datasets: SENSORS.map(s => ({ label: s.name, data: [], borderColor: s.color, borderWidth: 3, tension: 0.35, cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' })) },
+  options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
+    interaction: { mode: 'nearest', axis: 'x', intersect: false },
+    plugins: { legend: { display: true, labels: { color: tick } }, tooltip: { callbacks: {
+      title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
+      label: i => i.dataset.label + ': ' + i.parsed.y.toFixed(0) + ' %' } } },
+    scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
+              y: { ticks: { color: tick, callback: v => v + '%' }, grid: { color: grid } } } }
+});
+
+function redrawSensors() {
+  const now = Date.now(), from = now - hours * 3600000;
+  SENSORS.forEach((s, i) => {
+    const pts = s.rows.filter(r => r.t >= from).map(r => ({ x: r.t, y: r.temp }));
+    s.chart.data.datasets[0].data = pts;
+    s.chart.options.scales.x.min = from; s.chart.options.scales.x.max = now;
+    s.chart.update();
+    const el = document.getElementById('st_' + s.id);
+    if (el && s.rows.length) {
+      if (!pts.length) { el.textContent = 'Brak danych dla wybranego zakresu.'; }
+      else {
+        const v = pts.map(p => p.y);
+        el.innerHTML = `<div>Minimum<b style="color:${s.color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
+                       `<div>Maksimum<b style="color:${s.color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
+      }
+    }
+    chHum.data.datasets[i].data = s.rows.filter(r => r.t >= from && r.hum !== null).map(r => ({ x: r.t, y: r.hum }));
+  });
+  chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
+  chHum.update();
+}
+
+function sensorTiles() {
+  SENSORS.forEach(s => {
+    const last = s.rows[s.rows.length - 1];
+    document.getElementById('nowTemp_' + s.id).textContent = last ? last.temp.toFixed(1) + '°' : '–';
+    document.getElementById('nowHum_' + s.id).textContent = last && last.hum !== null ? 'wilgotność ' + last.hum.toFixed(0) + '%' : '';
+    document.getElementById('when_' + s.id).textContent = last ? hhmm(last.t) : 'brak danych';
+  });
+}
+
+// ---------- WSPÓLNE: zakresy, kafelki, pobieranie ----------
 function show(chart, key, statsId, color) {
   const now = Date.now(), from = now - hours * 3600000;
   const pts = points.filter(p => p.t >= from && p[key] !== null).map(p => ({ x: p.t, y: p[key] }));
@@ -190,6 +275,7 @@ function show(chart, key, statsId, color) {
 function redraw() {
   document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
   show(chHome, 'h', 'stHome', css('--home')); show(chOut, 'o', 'stOut', css('--out'));
+  redrawSensors();
 }
 document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
   hours = Number(b.dataset.h);
@@ -206,10 +292,23 @@ function tiles() {
   }
 }
 redraw();
+
+// Dom i Dwór
 fetch(TEMP_URL + '?ts=' + Date.now(), { cache: 'no-store' })
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
   .then(txt => { points = parse(txt); tiles(); redraw(); })
   .catch(() => { document.getElementById('stHome').textContent = document.getElementById('stOut').textContent = 'Nie udało się pobrać danych temperatury'; });
+
+// Sypialnia i Pralnia
+SENSORS.forEach(s => {
+  fetch(s.url + '?ts=' + Date.now(), { cache: 'no-store' })
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then(txt => { s.rows = parseSensor(txt); sensorTiles(); redraw(); })
+    .catch(() => {
+      document.getElementById('st_' + s.id).textContent = 'Nie udało się pobrać danych';
+      document.getElementById('when_' + s.id).textContent = 'brak danych';
+    });
+});
 
 // Odświeżanie co 60 s (z omijaniem cache)
 setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 60000);
