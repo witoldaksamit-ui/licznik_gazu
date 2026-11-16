@@ -11,6 +11,14 @@ from PIL import Image
 
 MAX_JUMP_M3 = 50.0  # maksymalny sensowny przyrost między odczytami (dostosuj do swojego interwału)
 
+# Czujniki temperatury/wilgotności (pliki publikowane w repo velvethome.github.io)
+# Format linii: 2026-11-15T19:08:38+01:00,20.6,54  (czas, temperatura °C, wilgotność %)
+TEMP_BASE_URL = "https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/"
+TEMP_SOURCES = [
+    {"name": "Sypialnia", "url": TEMP_BASE_URL + "temperatures_sypialnia.txt", "color": "#e74c3c"},
+    {"name": "Pralnia", "url": TEMP_BASE_URL + "temperatures_pralnia.txt", "color": "#2980b9"},
+]
+
 
 def get_latest_image():
     """Szuka najnowszego pliku graficznego w folderze img_tmp"""
@@ -18,10 +26,8 @@ def get_latest_image():
     files = []
     for ext in image_extensions:
         files.extend(glob.glob(f"img_tmp/{ext}"))
-
     if not files:
         return None
-
     return max(files, key=os.path.getmtime)
 
 
@@ -107,7 +113,6 @@ def clean_and_update_history(new_value, file_path="odczyty24h.txt"):
     """Zapisuje nowy odczyt i usuwa wpisy starsze niż 24 godziny"""
     now = datetime.now()
     cutoff_time = now - timedelta(hours=24)
-
     updated_lines = []
 
     if os.path.exists(file_path):
@@ -139,46 +144,282 @@ def optimize_image(image_path, max_size=1024):
     with Image.open(image_path) as img:
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
-
         img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
-
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG', quality=85)
         return img_byte_arr.getvalue()
 
 
-def update_html(timestamp, value, image_path, success=True, file_path="index.html", template_path="index_template.html"):
-    """Generuje index.html z szablonu index_template.html (gaz + temperatura)"""
+def update_html(timestamp, value, image_path, success=True, file_path="index.html"):
+    """Aktualizuje plik index.html: stan gazomierza (2 wykresy) + temperatury z czujników (kafelki i 2 wykresy)"""
     cache_buster = int(time.time())
     img_src = f"{image_path}?t={cache_buster}"
 
-    if success:
-        status_html = '<div class="ok">✓ Ostatni odczyt się udał.</div>'
-    else:
-        status_html = '<div class="uwaga">✗ Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
+    uwaga_html = ""
+    if not success:
+        uwaga_html = '<div class="uwaga">Ostatni odczyt się nie powiódł, wyświetlana jest poprzednia poprawna wartość.</div>'
 
+    # Pobieramy serie danych dla wykresów gazomierza
     labels, values, diff_labels, diff_values = get_history_data()
-    usage24 = f"{sum(diff_values):.3f}"  # historia w odczyty24h.txt obejmuje ostatnie 24 h
 
-    with open(template_path, "r", encoding="utf-8") as f:
-        html = f.read()
+    html_content = f"""<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podgląd Licznika Gazu</title>
+<!-- Dołączenie biblioteki Chart.js z CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    body {{
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }}
+    .container {{
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        text-align: center;
+        max-width: 550px;
+        width: 100%;
+        margin: 20px;
+    }}
+    h1 {{ color: #333; font-size: 24px; margin-bottom: 10px; }}
+    h3 {{ color: #444; font-size: 16px; margin-top: 25px; margin-bottom: 10px; }}
+    .status {{ color: #666; font-size: 14px; margin-bottom: 20px; }}
+    .timestamp {{ font-weight: bold; color: #2c3e50; }}
+    .odczyt {{ font-size: 32px; font-weight: bold; color: #27ae60; background: #e8f8f5; padding: 10px; border-radius: 10px; margin: 20px 0; letter-spacing: 2px; }}
+    .uwaga {{ font-size: 13px; color: #b9770e; background: #fef5e7; padding: 8px; border-radius: 8px; margin-bottom: 15px; }}
+    img {{ max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }}
+    .chart-container {{ position: relative; margin-top: 10px; height: 220px; width: 100%; }}
+    .rooms {{ display: flex; gap: 12px; margin-top: 10px; }}
+    .room {{ flex: 1; background: #f4f6f8; border-radius: 10px; padding: 12px 8px; }}
+    .room-name {{ font-size: 13px; font-weight: bold; margin-bottom: 4px; }}
+    .room-temp {{ font-size: 28px; font-weight: bold; color: #333; }}
+    .room-hum {{ font-size: 15px; color: #2980b9; margin-top: 2px; }}
+    .room-time {{ font-size: 11px; color: #888; margin-top: 6px; }}
+    .room-stale {{ color: #b9770e; }}
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bieżący Stan Licznika</h1>
+        <div class="status">Ostatnia aktualizacja danych:<br><span class="timestamp">{timestamp}</span></div>
 
-    replacements = {
-        "__TIMESTAMP__": timestamp,
-        "__VALUE__": str(value),
-        "__STATUS__": status_html,
-        "__USAGE24__": usage24,
-        "__IMG_SRC__": img_src,
-        "__STATE_LABELS__": json.dumps(labels),
-        "__STATE_VALUES__": json.dumps(values),
-        "__DIFF_LABELS__": json.dumps(diff_labels),
-        "__DIFF_VALUES__": json.dumps(diff_values),
-    }
-    for key, val in replacements.items():
-        html = html.replace(key, val)
+        <div class="odczyt">{value} m³</div>
+        {uwaga_html}
+
+        <h3>Aktualne zdjęcie z gazomierza:</h3>
+        <img src="{img_src}" alt="Zdjęcie licznika">
+
+        <h3>Skumulowany stan licznika (m³):</h3>
+        <div class="chart-container">
+            <canvas id="gasStateChart"></canvas>
+        </div>
+
+        <h3>Chwilowe zużycie gazu pomiędzy odczytami (Δ m³):</h3>
+        <div class="chart-container">
+            <canvas id="gasDiffChart"></canvas>
+        </div>
+
+        <h3>Temperatura i wilgotność w domu:</h3>
+        <div class="rooms" id="rooms">Ładowanie danych z czujników...</div>
+
+        <h3>Temperatura (°C):</h3>
+        <div class="chart-container">
+            <canvas id="tempChart"></canvas>
+        </div>
+
+        <h3>Wilgotność (%):</h3>
+        <div class="chart-container">
+            <canvas id="humChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // WYKRES 1: Stan skumulowany licznika
+        const ctxState = document.getElementById('gasStateChart').getContext('2d');
+        new Chart(ctxState, {{
+            type: 'line',
+            data: {{
+                labels: {json.dumps(labels)},
+                datasets: [{{
+                    label: 'Stan licznika (m³)',
+                    data: {json.dumps(values)},
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{ legend: {{ display: false }} }},
+                scales: {{ y: {{ beginAtZero: false }} }}
+            }}
+        }});
+
+        // WYKRES 2: Zużycie chwilowe (wykres liniowy)
+        const ctxDiff = document.getElementById('gasDiffChart').getContext('2d');
+        new Chart(ctxDiff, {{
+            type: 'line',
+            data: {{
+                labels: {json.dumps(diff_labels)},
+                datasets: [{{
+                    label: 'Przyrost (m³)',
+                    data: {json.dumps(diff_values)},
+                    borderColor: '#e67e22',
+                    backgroundColor: 'rgba(230, 126, 34, 0.05)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{ legend: {{ display: false }} }},
+                scales: {{
+                    y: {{
+                        beginAtZero: true,
+                        ticks: {{
+                            callback: function(value) {{ return value + ' m³'; }}
+                        }}
+                    }}
+                }}
+            }}
+        }});
+
+        // ===== CZUJNIKI TEMPERATURY I WILGOTNOŚCI =====
+        // Dane pobierane w przeglądarce z repo velvethome.github.io (zawsze aktualne,
+        // niezależnie od tego, kiedy ostatnio uruchomił się workflow).
+        const TEMP_SOURCES = {json.dumps(TEMP_SOURCES)};
+
+        // Linia: czas,temperatura,wilgotność  ->  {{t: ms, temp: °C, hum: %}}
+        function parseTempFile(txt) {{
+            return txt.split('\\n')
+                .map(function(l) {{ return l.trim(); }})
+                .filter(function(l) {{ return l.length > 0; }})
+                .map(function(l) {{
+                    const p = l.split(',');
+                    return {{ t: Date.parse(p[0]), temp: parseFloat(p[1]), hum: parseFloat(p[2]) }};
+                }})
+                .filter(function(r) {{ return !isNaN(r.t) && !isNaN(r.temp); }});
+        }}
+
+        function fmtTime(ms) {{
+            return new Date(ms).toLocaleTimeString('pl-PL', {{ hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Warsaw' }});
+        }}
+
+        function renderRooms(results) {{
+            let out = '';
+            results.forEach(function(res) {{
+                out += '<div class="room">';
+                out += '<div class="room-name" style="color:' + res.src.color + '">' + res.src.name + '</div>';
+                if (res.rows.length === 0) {{
+                    out += '<div class="room-time">brak danych</div>';
+                }} else {{
+                    const last = res.rows[res.rows.length - 1];
+                    const stale = (Date.now() - last.t) > 3600000;
+                    out += '<div class="room-temp">' + last.temp.toFixed(1) + ' °C</div>';
+                    if (!isNaN(last.hum)) {{
+                        out += '<div class="room-hum">' + last.hum.toFixed(0) + ' %</div>';
+                    }}
+                    out += '<div class="room-time' + (stale ? ' room-stale' : '') + '">pomiar: ' + fmtTime(last.t) + (stale ? ' (dane nieaktualne)' : '') + '</div>';
+                }}
+                out += '</div>';
+            }});
+            document.getElementById('rooms').innerHTML = out;
+        }}
+
+        function makeSensorChart(canvasId, field, unit, results) {{
+            new Chart(document.getElementById(canvasId).getContext('2d'), {{
+                type: 'line',
+                data: {{
+                    datasets: results.map(function(res) {{
+                        return {{
+                            label: res.src.name,
+                            data: res.rows
+                                .filter(function(r) {{ return !isNaN(r[field]); }})
+                                .map(function(r) {{ return {{ x: r.t, y: r[field] }}; }}),
+                            borderColor: res.src.color,
+                            backgroundColor: res.src.color,
+                            borderWidth: 2,
+                            tension: 0.2,
+                            pointRadius: 0,
+                            pointHoverRadius: 3
+                        }};
+                    }})
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {{ mode: 'nearest', axis: 'x', intersect: false }},
+                    plugins: {{
+                        legend: {{ display: true }},
+                        tooltip: {{
+                            callbacks: {{
+                                title: function(items) {{ return fmtTime(items[0].parsed.x); }},
+                                label: function(item) {{ return item.dataset.label + ': ' + item.parsed.y + ' ' + unit; }}
+                            }}
+                        }}
+                    }},
+                    scales: {{
+                        x: {{
+                            type: 'linear',
+                            ticks: {{
+                                maxTicksLimit: 6,
+                                callback: function(v) {{ return fmtTime(v); }}
+                            }}
+                        }},
+                        y: {{
+                            beginAtZero: false,
+                            ticks: {{ callback: function(v) {{ return v + ' ' + unit; }} }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        async function loadSensors() {{
+            const results = await Promise.all(TEMP_SOURCES.map(async function(src) {{
+                try {{
+                    const r = await fetch(src.url + '?t=' + Date.now(), {{ cache: 'no-store' }});
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return {{ src: src, rows: parseTempFile(await r.text()) }};
+                }} catch (e) {{
+                    return {{ src: src, rows: [] }};
+                }}
+            }}));
+            renderRooms(results);
+            makeSensorChart('tempChart', 'temp', '°C', results);
+            makeSensorChart('humChart', 'hum', '%', results);
+        }}
+        loadSensors();
+
+        // Automatyczne odświeżanie co 60 sekund (z omijaniem cache)
+        setTimeout(function() {{
+            window.location.href = window.location.pathname + '?t=' + Date.now();
+        }}, 60000);
+    </script>
+</body>
+</html>"""
 
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(html_content)
 
 
 def main():
@@ -234,7 +475,6 @@ def main():
             print(f"Próba {attempt + 1}: odrzucony odczyt {raw!r}")
         except Exception as e:
             print(f"Próba {attempt + 1} nieudana: {e}")
-
         if attempt < 2:
             time.sleep(5)
 
