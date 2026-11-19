@@ -17,7 +17,7 @@
   --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
-  --bed:#EC407A; --laundry:#26A69A;
+  --salon:#EF5350; --dwor:#66BB6A; --pralnia:#42A5F5;   /* kolory pomieszczeń (jak w aplikacji) */
   --err:#FF8A80;
 }
 * { box-sizing:border-box; }
@@ -38,13 +38,16 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 .sub { color:var(--cream); opacity:.7; font-size:14px; text-align:center; }
 
 /* kafelki jak karta "BIEŻĄCY ODCZYT" */
-.tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
-.tiles.two { grid-template-columns:repeat(2,1fr); }
+.tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+@media (max-width:560px) { .tiles { grid-template-columns:repeat(2,1fr); } }
 .tile { background:var(--panel); border-radius:16px; padding:16px 8px; text-align:center; }
 .tile .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
 .tile .val { font-size:26px; font-weight:700; margin-top:10px; letter-spacing:.5px; }
 .tile .hum { font-size:13px; color:var(--cream); opacity:.85; margin-top:4px; }
 .tile .when { font-size:11px; color:var(--cream); opacity:.7; margin-top:4px; }
+.tile .when.stale { color:var(--err); opacity:1; }
+.legend { display:flex; justify-content:center; gap:16px; margin-top:8px; font-size:12px; color:rgba(58,58,58,.8); }
+.legend i { display:inline-block; width:12px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px; }
 
 /* chipy zakresu jak FilterChip */
 .chips { display:flex; justify-content:space-evenly; gap:8px; }
@@ -77,14 +80,8 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 </header>
 <main>
   <section>
-    <div class="tiles">
-      <div class="tile"><div class="lbl">Dom</div><div class="val" id="nowHome" style="color:var(--home)">–</div><div class="when" id="whenHome"></div></div>
-      <div class="tile"><div class="lbl">Dwór</div><div class="val" id="nowOut" style="color:var(--out)">–</div><div class="when" id="whenOut"></div></div>
-      <div class="tile"><div class="lbl">Gaz</div><div class="val">194.944</div><div class="when">m³ · 2026-11-19 20:16:03</div></div>
-    </div>
-    <div class="tiles two">
-      <div class="tile"><div class="lbl">Sypialnia</div><div class="val" id="nowTemp_bed" style="color:var(--bed)">–</div><div class="hum" id="nowHum_bed"></div><div class="when" id="when_bed"></div></div>
-      <div class="tile"><div class="lbl">Pralnia</div><div class="val" id="nowTemp_lau" style="color:var(--laundry)">–</div><div class="hum" id="nowHum_lau"></div><div class="when" id="when_lau"></div></div>
+    <div class="tiles" id="tiles">
+      <div class="tile"><div class="lbl">Gaz</div><div class="val">194.944</div><div class="when">m³ · 2026-11-19 20:38:25</div></div>
     </div>
   </section>
 
@@ -95,40 +92,22 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
       <button class="chip" data-h="12">Ostatnie 12h</button>
       <button class="chip" data-h="6">Ostatnie 6h</button>
     </div>
+    <div id="tempCards"></div>
     <div class="chartcard">
-      <h3>Dom</h3>
-      <div class="chart"><canvas id="chHome"></canvas></div>
-      <div class="stats" id="stHome"></div>
-    </div>
-    <div class="chartcard">
-      <h3>Dwór</h3>
-      <div class="chart"><canvas id="chOut"></canvas></div>
-      <div class="stats" id="stOut"></div>
-    </div>
-    <div class="chartcard">
-      <h3>Sypialnia</h3>
-      <div class="chart"><canvas id="ch_bed"></canvas></div>
-      <div class="stats" id="st_bed"></div>
-    </div>
-    <div class="chartcard">
-      <h3>Pralnia</h3>
-      <div class="chart"><canvas id="ch_lau"></canvas></div>
-      <div class="stats" id="st_lau"></div>
-    </div>
-    <div class="chartcard">
-      <h3>Wilgotność (sypialnia i pralnia)</h3>
+      <h3>Wilgotność</h3>
       <div class="chart"><canvas id="chHum"></canvas></div>
+      <div class="legend" id="humLegend"></div>
     </div>
   </section>
 
   <section>
     <h2>Stan Licznika Gazu</h2>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-19 20:16:03</div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-19 20:38:25</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
-    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>5.355 m³</b></div>
+    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>5.141 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795115765" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795117110" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -155,159 +134,120 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => v + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["20:21", "20:51", "21:21", "21:51", "22:21", "22:50", "23:20", "23:50", "00:20", "00:50", "01:20", "01:50", "02:19", "02:49", "03:19", "03:49", "04:19", "04:49", "05:19", "05:49", "06:19", "06:48", "07:18", "07:48", "08:18", "08:48", "09:18", "09:48", "10:18", "10:47", "11:17", "11:47", "12:17", "12:47", "13:17", "13:47", "14:17", "14:47", "15:17", "15:46", "16:17", "16:47", "17:16", "17:46", "18:16", "18:46", "19:16", "19:46", "20:16"], [189.589, 189.803, 189.803, 189.803, 189.803, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.865, 191.395, 191.808, 192.195, 192.6, 192.955, 193.317, 193.671, 194.02, 194.189, 194.397, 194.944], css('--level'), false, '');
-gasChart('gasDiffChart', ["20:51", "21:21", "21:51", "22:21", "22:50", "23:20", "23:50", "00:20", "00:50", "01:20", "01:50", "02:19", "02:49", "03:19", "03:49", "04:19", "04:49", "05:19", "05:49", "06:19", "06:48", "07:18", "07:48", "08:18", "08:48", "09:18", "09:48", "10:18", "10:47", "11:17", "11:47", "12:17", "12:47", "13:17", "13:47", "14:17", "14:47", "15:17", "15:46", "16:17", "16:47", "17:16", "17:46", "18:16", "18:46", "19:16", "19:46", "20:16"], [0.214, 0.0, 0.0, 0.0, 0.027, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.046, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.567, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.422, 0.53, 0.413, 0.387, 0.405, 0.355, 0.362, 0.354, 0.349, 0.169, 0.208, 0.547], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["20:51", "21:21", "21:51", "22:21", "22:50", "23:20", "23:50", "00:20", "00:50", "01:20", "01:50", "02:19", "02:49", "03:19", "03:49", "04:19", "04:49", "05:19", "05:49", "06:19", "06:48", "07:18", "07:48", "08:18", "08:48", "09:18", "09:48", "10:18", "10:47", "11:17", "11:47", "12:17", "12:47", "13:17", "13:47", "14:17", "14:47", "15:17", "15:46", "16:17", "16:47", "17:16", "17:46", "18:16", "18:46", "19:16", "19:46", "20:16", "20:38"], [189.803, 189.803, 189.803, 189.803, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.83, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 189.876, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.443, 190.865, 191.395, 191.808, 192.195, 192.6, 192.955, 193.317, 193.671, 194.02, 194.189, 194.397, 194.944, 194.944], css('--level'), false, '');
+gasChart('gasDiffChart', ["21:21", "21:51", "22:21", "22:50", "23:20", "23:50", "00:20", "00:50", "01:20", "01:50", "02:19", "02:49", "03:19", "03:49", "04:19", "04:49", "05:19", "05:49", "06:19", "06:48", "07:18", "07:48", "08:18", "08:48", "09:18", "09:48", "10:18", "10:47", "11:17", "11:47", "12:17", "12:47", "13:17", "13:47", "14:17", "14:47", "15:17", "15:46", "16:17", "16:47", "17:16", "17:46", "18:16", "18:46", "19:16", "19:46", "20:16", "20:38"], [0.0, 0.0, 0.0, 0.027, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.046, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.567, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.422, 0.53, 0.413, 0.387, 0.405, 0.355, 0.362, 0.354, 0.349, 0.169, 0.208, 0.547, 0.0], css('--flow'), true, ' m³');
 
-// ---------- TEMPERATURA (pobierana z repo velvethome.github.io) ----------
-const TEMP_URL = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/temperatures.txt';
-const hhmm = t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
-let points = [], hours = 24;
-try { hours = Number(localStorage.getItem('range')) || 24; } catch (e) {}
-
-function parseTs(s) {
-  let d = Date.parse(s);
-  if (isNaN(d)) d = Date.parse(s.replace(' ', 'T'));
-  if (isNaN(d)) { const n = Number(s); if (!isNaN(n)) d = n > 1e12 ? n : n * 1000; }
-  return d;
-}
-function parse(text) {
-  const out = [];
-  for (const raw of text.split(/\r?\n/)) {
-    const p = raw.trim().split(/[,\t]/).map(s => s.trim());
-    if (p.length < 3 || raw.startsWith('#')) continue;
-    const t = parseTs(p[0]), h = parseFloat(p[1]), o = parseFloat(p[2]);
-    if (!isNaN(t)) out.push({ t, h: isNaN(h) ? null : h, o: isNaN(o) ? null : o });
-  }
-  return out.sort((a, b) => a.t - b.t);
-}
-
-function tempChart(id, color) {
-  return new Chart(document.getElementById(id), {
-    type: 'line',
-    data: { datasets: [{ data: [], borderColor: color, borderWidth: 3, tension: 0.35, cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
-    options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
-      interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { callbacks: {
-        title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
-        label: i => i.parsed.y.toFixed(1) + ' °C' } } },
-      scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
-                y: { ticks: { color: tick, callback: v => v + '°' }, grid: { color: grid } } } }
-  });
-}
-const chHome = tempChart('chHome', css('--home')), chOut = tempChart('chOut', css('--out'));
-
-// ---------- CZUJNIKI: SYPIALNIA I PRALNIA (czas,temperatura,wilgotność) ----------
-const SENSOR_BASE = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/';
-const SENSORS = [
-  { id: 'bed', name: 'Sypialnia', url: SENSOR_BASE + 'temperatures_sypialnia.txt', color: css('--bed'), rows: [] },
-  { id: 'lau', name: 'Pralnia',   url: SENSOR_BASE + 'temperatures_pralnia.txt',   color: css('--laundry'), rows: [] }
+// ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
+// Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
+const DATA_BASE = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/';
+const STALE_MS = 60 * 60 * 1000;   // odczyt starszy niż godzina jest oznaczany jako nieaktualny
+const ROOMS = [
+  { id: 'salon',     name: 'Salon',   file: 'temperatures_salon.txt',     color: css('--salon') },
+  { id: 'sypialnia', name: 'Dwór',    file: 'temperatures_sypialnia.txt', color: css('--dwor') },
+  { id: 'pralnia',   name: 'Pralnia', file: 'temperatures_pralnia.txt',   color: css('--pralnia') }
 ];
 
-function parseSensor(text) {
+const hhmm = t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+let hours = 24;
+try { hours = Number(localStorage.getItem('range')) || 24; } catch (e) {}
+
+function parseRoom(text) {
   const out = [];
   for (const raw of text.split(/\r?\n/)) {
-    if (!raw.trim() || raw.startsWith('#')) continue;
-    const p = raw.trim().split(',').map(s => s.trim());
-    const t = parseTs(p[0]), temp = parseFloat(p[1]), hum = parseFloat(p[2]);
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const p = line.split(',').map(s => s.trim());
+    const t = Date.parse(p[0]), temp = parseFloat(p[1]), hum = parseFloat(p[2]);
     if (!isNaN(t) && !isNaN(temp)) out.push({ t, temp, hum: isNaN(hum) ? null : hum });
   }
   return out.sort((a, b) => a.t - b.t);
 }
 
-SENSORS.forEach(s => { s.chart = tempChart('ch_' + s.id, s.color); });
+const lineStyle = color => ({ borderColor: color, backgroundColor: color, borderWidth: 3, tension: 0.35,
+  cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4,
+  borderCapStyle: 'round', borderJoinStyle: 'round' });
 
-const chHum = new Chart(document.getElementById('chHum'), {
-  type: 'line',
-  data: { datasets: SENSORS.map(s => ({ label: s.name, data: [], borderColor: s.color, borderWidth: 3, tension: 0.35, cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' })) },
-  options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
-    interaction: { mode: 'nearest', axis: 'x', intersect: false },
-    plugins: { legend: { display: true, labels: { color: tick } }, tooltip: { callbacks: {
-      title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
-      label: i => i.dataset.label + ': ' + i.parsed.y.toFixed(0) + ' %' } } },
-    scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
-              y: { ticks: { color: tick, callback: v => v + '%' }, grid: { color: grid } } } }
+function timeChart(canvas, datasets, unit, digits) {
+  return new Chart(canvas, {
+    type: 'line',
+    data: { datasets },
+    options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
+        label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + i.parsed.y.toFixed(digits) + unit } } },
+      scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
+                y: { ticks: { color: tick, callback: v => v + (unit === ' °C' ? '°' : '%') }, grid: { color: grid } } } }
+  });
+}
+
+// kafelki i karty wykresów dla każdego pomieszczenia
+const tilesEl = document.getElementById('tiles'), cardsEl = document.getElementById('tempCards');
+cardsEl.style.cssText = 'display:grid; gap:16px';
+ROOMS.forEach((r, i) => {
+  const tile = document.createElement('div');
+  tile.className = 'tile';
+  tile.innerHTML = `<div class="lbl">${r.name}</div><div class="val" id="now_${r.id}" style="color:${r.color}">–</div>` +
+                   `<div class="hum" id="hum_${r.id}"></div><div class="when" id="when_${r.id}"></div>`;
+  tilesEl.insertBefore(tile, tilesEl.children[i]);
+  const card = document.createElement('div');
+  card.className = 'chartcard';
+  card.innerHTML = `<h3>${r.name}</h3><div class="chart"><canvas id="ch_${r.id}"></canvas></div><div class="stats" id="st_${r.id}"></div>`;
+  cardsEl.appendChild(card);
+  r.rows = [];
+  r.chart = timeChart(document.getElementById('ch_' + r.id), [{ label: r.name, data: [], ...lineStyle(r.color) }], ' °C', 1);
 });
+const chHum = timeChart(document.getElementById('chHum'),
+  ROOMS.map(r => ({ label: r.name, data: [], ...lineStyle(r.color) })), ' %', 0);
+document.getElementById('humLegend').innerHTML =
+  ROOMS.map(r => `<span><i style="background:${r.color}"></i>${r.name}</span>`).join('');
 
-function redrawSensors() {
+function redraw() {
+  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
   const now = Date.now(), from = now - hours * 3600000;
-  SENSORS.forEach((s, i) => {
-    const pts = s.rows.filter(r => r.t >= from).map(r => ({ x: r.t, y: r.temp }));
-    s.chart.data.datasets[0].data = pts;
-    s.chart.options.scales.x.min = from; s.chart.options.scales.x.max = now;
-    s.chart.update();
-    const el = document.getElementById('st_' + s.id);
-    if (el && s.rows.length) {
-      if (!pts.length) { el.textContent = 'Brak danych dla wybranego zakresu.'; }
-      else {
-        const v = pts.map(p => p.y);
-        el.innerHTML = `<div>Minimum<b style="color:${s.color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
-                       `<div>Maksimum<b style="color:${s.color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
-      }
+  ROOMS.forEach((r, i) => {
+    const rows = r.rows.filter(p => p.t >= from);
+    r.chart.data.datasets[0].data = rows.map(p => ({ x: p.t, y: p.temp }));
+    r.chart.options.scales.x.min = from; r.chart.options.scales.x.max = now;
+    r.chart.update();
+    const st = document.getElementById('st_' + r.id);
+    if (r.error) st.textContent = 'Nie udało się pobrać danych';
+    else if (!rows.length) st.textContent = 'Brak danych dla wybranego zakresu.';
+    else {
+      const v = rows.map(p => p.temp);
+      st.innerHTML = `<div>Minimum<b style="color:${r.color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
+                     `<div>Maksimum<b style="color:${r.color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
     }
-    chHum.data.datasets[i].data = s.rows.filter(r => r.t >= from && r.hum !== null).map(r => ({ x: r.t, y: r.hum }));
+    chHum.data.datasets[i].data = rows.filter(p => p.hum !== null).map(p => ({ x: p.t, y: p.hum }));
   });
   chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
   chHum.update();
 }
 
-function sensorTiles() {
-  SENSORS.forEach(s => {
-    const last = s.rows[s.rows.length - 1];
-    document.getElementById('nowTemp_' + s.id).textContent = last ? last.temp.toFixed(1) + '°' : '–';
-    document.getElementById('nowHum_' + s.id).textContent = last && last.hum !== null ? 'wilgotność ' + last.hum.toFixed(0) + '%' : '';
-    document.getElementById('when_' + s.id).textContent = last ? hhmm(last.t) : 'brak danych';
-  });
+function updateTile(r) {
+  const last = r.rows[r.rows.length - 1];
+  const when = document.getElementById('when_' + r.id);
+  document.getElementById('now_' + r.id).textContent = last ? last.temp.toFixed(1) + '°' : '–';
+  document.getElementById('hum_' + r.id).textContent = last && last.hum !== null ? 'wilgotność ' + last.hum.toFixed(0) + '%' : '';
+  if (!last) { when.textContent = r.error ? 'błąd pobierania' : 'brak danych'; return; }
+  const stale = Date.now() - last.t > STALE_MS;
+  when.textContent = hhmm(last.t) + (stale ? ' · nieaktualne' : '');
+  when.classList.toggle('stale', stale);
 }
 
-// ---------- WSPÓLNE: zakresy, kafelki, pobieranie ----------
-function show(chart, key, statsId, color) {
-  const now = Date.now(), from = now - hours * 3600000;
-  const pts = points.filter(p => p.t >= from && p[key] !== null).map(p => ({ x: p.t, y: p[key] }));
-  chart.data.datasets[0].data = pts;
-  chart.options.scales.x.min = from; chart.options.scales.x.max = now;
-  chart.update();
-  const el = document.getElementById(statsId);
-  if (!pts.length) { el.textContent = 'Brak danych dla wybranego zakresu.'; return; }
-  const v = pts.map(p => p.y);
-  el.innerHTML = `<div>Minimum<b style="color:${color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
-                 `<div>Maksimum<b style="color:${color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
-}
-function redraw() {
-  document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
-  show(chHome, 'h', 'stHome', css('--home')); show(chOut, 'o', 'stOut', css('--out'));
-  redrawSensors();
-}
 document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
   hours = Number(b.dataset.h);
   try { localStorage.setItem('range', hours); } catch (e) {}
   redraw();
 }));
-
-function latest(key) { for (let i = points.length - 1; i >= 0; i--) if (points[i][key] !== null) return points[i]; return null; }
-function tiles() {
-  for (const [key, valId, whenId] of [['h', 'nowHome', 'whenHome'], ['o', 'nowOut', 'whenOut']]) {
-    const p = latest(key);
-    document.getElementById(valId).textContent = p ? p[key].toFixed(1) + '°' : '–';
-    document.getElementById(whenId).textContent = p ? hhmm(p.t) : 'brak danych';
-  }
-}
 redraw();
 
-// Dom i Dwór
-fetch(TEMP_URL + '?ts=' + Date.now(), { cache: 'no-store' })
-  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-  .then(txt => { points = parse(txt); tiles(); redraw(); })
-  .catch(() => { document.getElementById('stHome').textContent = document.getElementById('stOut').textContent = 'Nie udało się pobrać danych temperatury'; });
-
-// Sypialnia i Pralnia
-SENSORS.forEach(s => {
-  fetch(s.url + '?ts=' + Date.now(), { cache: 'no-store' })
-    .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then(txt => { s.rows = parseSensor(txt); sensorTiles(); redraw(); })
-    .catch(() => {
-      document.getElementById('st_' + s.id).textContent = 'Nie udało się pobrać danych';
-      document.getElementById('when_' + s.id).textContent = 'brak danych';
-    });
+ROOMS.forEach(r => {
+  fetch(DATA_BASE + r.file + '?ts=' + Date.now(), { cache: 'no-store' })
+    .then(res => { if (!res.ok) throw new Error(res.status); return res.text(); })
+    .then(txt => { r.rows = parseRoom(txt); })
+    .catch(() => { r.error = true; })
+    .finally(() => { updateTile(r); redraw(); });
 });
 
 // Odświeżanie co 60 s (z omijaniem cache)
