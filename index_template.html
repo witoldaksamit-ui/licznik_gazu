@@ -17,7 +17,7 @@
   --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
-  --laundry:#26A69A;
+  --salon:#EF5350; --dwor:#66BB6A; --pralnia:#42A5F5;   /* kolory pomieszczeń (jak w aplikacji) */
   --err:#FF8A80;
 }
 * { box-sizing:border-box; }
@@ -142,9 +142,9 @@ gasChart('gasDiffChart', __DIFF_LABELS__, __DIFF_VALUES__, css('--flow'), true, 
 const DATA_BASE = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/';
 const STALE_MS = 60 * 60 * 1000;   // odczyt starszy niż godzina jest oznaczany jako nieaktualny
 const ROOMS = [
-  { id: 'salon',     name: 'Salon',       file: 'temperatures_salon.txt',     color: css('--home') },
-  { id: 'sypialnia', name: 'Na zewnątrz', file: 'temperatures_sypialnia.txt', color: css('--out') },
-  { id: 'pralnia',   name: 'Pralnia',     file: 'temperatures_pralnia.txt',   color: css('--laundry') }
+  { id: 'salon',     name: 'Salon',   file: 'temperatures_salon.txt',     color: css('--salon') },
+  { id: 'sypialnia', name: 'Dwór',    file: 'temperatures_sypialnia.txt', color: css('--dwor') },
+  { id: 'pralnia',   name: 'Pralnia', file: 'temperatures_pralnia.txt',   color: css('--pralnia') }
 ];
 
 const hhmm = t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });

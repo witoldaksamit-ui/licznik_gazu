@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'img_tmp/**' # Uruchamia się automatycznie po dodaniu plików do img_tmp
+      - 'index_template.html' # oraz po zmianie wyglądu strony, żeby index.html odświeżył się od razu
+  workflow_dispatch: # ręczne uruchomienie z zakładki Actions
 
 # Wymuszenie strefy czasowej dla całej maszyny wirtualnej GitHub
 env:
