@@ -84,7 +84,7 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 <main>
   <section>
     <div class="tiles" id="tiles">
-      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">202.214</div><div class="when">m³ · 2026-11-21 09:50:32</div></div>
+      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">202.214</div><div class="when">m³ · 2026-11-21 09:54:10</div></div>
     </div>
   </section>
 
@@ -105,12 +105,12 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section>
     <h2>Stan Licznika Gazu</h2>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-21 09:50:32</div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-21 09:54:10</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>7.059 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795251033" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795251251" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -131,14 +131,18 @@ const grid = 'rgba(0,0,0,0.12)', tick = 'rgba(58,58,58,0.8)';
 function gasChart(id, labels, data, color, zero, unit) {
   new Chart(document.getElementById(id), {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 0, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },   // okienko z wartością po najechaniu myszą
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: i => 'Godzina ' + i[0].label,
+        label: i => i.parsed.y.toFixed(3) + ' m³' } } },
       scales: { x: { ticks: { color: tick, maxTicksLimit: 4 }, grid: { color: grid } },
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505, 201.505, 201.848, 202.214, 202.214], css('--level'), false, '');
-gasChart('gasDiffChart', ["10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37, 0.0, 0.343, 0.366, 0.0], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505, 201.505, 201.848, 202.214, 202.214, 202.214], css('--level'), false, '');
+gasChart('gasDiffChart', ["10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37, 0.0, 0.343, 0.366, 0.0, 0.0], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
@@ -172,6 +176,23 @@ const lineStyle = color => ({ borderColor: color, backgroundColor: color, border
   cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4,
   borderCapStyle: 'round', borderJoinStyle: 'round' });
 
+// Wygładzanie wykresów temperatury i wilgotności: średnia z pomiarów w oknie ±15 min.
+// Czujniki podają wartości co 0,1 °C (wilgotność co 1 %), więc bez tego linia jest schodkowa.
+// Okienko po najechaniu myszą pokazuje rzeczywisty pomiar (pole raw), a min/max liczone są z pomiarów.
+const SMOOTH_MS = 15 * 60 * 1000;
+function smoothSeries(rows, key) {
+  const pts = rows.filter(p => p[key] !== null);
+  const out = [];
+  let lo = 0, hi = 0, sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const t = pts[i].t;
+    while (hi < pts.length && pts[hi].t <= t + SMOOTH_MS) { sum += pts[hi][key]; hi++; }
+    while (pts[lo].t < t - SMOOTH_MS) { sum -= pts[lo][key]; lo++; }
+    out.push({ x: t, y: sum / (hi - lo), raw: pts[i][key] });
+  }
+  return out;
+}
+
 function timeChart(canvas, datasets, unit, digits) {
   return new Chart(canvas, {
     type: 'line',
@@ -180,7 +201,7 @@ function timeChart(canvas, datasets, unit, digits) {
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
-        label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + i.parsed.y.toFixed(digits) + unit } } },
+        label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + (i.raw.raw ?? i.parsed.y).toFixed(digits) + unit } } },
       scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
                 y: { ticks: { color: tick, precision: unit === ' °C' ? 1 : 0,
                            callback: v => unit === ' °C' ? v.toFixed(1) + '°' : Math.round(v) + '%' },
@@ -218,7 +239,7 @@ function redraw() {
   const now = Date.now(), from = now - hours * 3600000;
   ROOMS.forEach((r, i) => {
     const rows = r.rows.filter(p => p.t >= from);
-    r.chart.data.datasets[0].data = rows.map(p => ({ x: p.t, y: p.temp }));
+    r.chart.data.datasets[0].data = smoothSeries(rows, 'temp');
     r.chart.options.scales.x.min = from; r.chart.options.scales.x.max = now;
     r.chart.update();
     const st = document.getElementById('st_' + r.id);
@@ -229,7 +250,7 @@ function redraw() {
       st.innerHTML = `<div>Minimum<b style="color:${r.color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
                      `<div>Maksimum<b style="color:${r.color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
     }
-    chHum.data.datasets[i].data = rows.filter(p => p.hum !== null).map(p => ({ x: p.t, y: p.hum }));
+    chHum.data.datasets[i].data = smoothSeries(rows, 'hum');
   });
   chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
   chHum.update();
