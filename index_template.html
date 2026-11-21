@@ -32,8 +32,24 @@ header { text-align:center; padding:28px 16px 8px; }
 header img { width:72px; height:72px; border-radius:18px; display:block; margin:0 auto 12px; box-shadow:0 4px 18px rgba(0,0,0,.35); }
 header h1 { margin:0; font-size:34px; font-weight:700; letter-spacing:2px; color:var(--cream); }
 header p { margin:6px 0 0; font-size:14px; letter-spacing:1px; color:var(--gold); opacity:.85; }
-main { max-width:720px; margin:0 auto; padding:16px; display:grid; gap:24px; }
-section { display:grid; gap:16px; }
+/* układ: menu po lewej, treść wybranej zakładki po prawej */
+.layout { max-width:1000px; margin:0 auto; padding:16px; display:flex; gap:24px; align-items:flex-start; }
+nav.side { position:sticky; top:16px; flex:none; width:210px; display:flex; flex-direction:column; gap:6px;
+           background:var(--panel); border-radius:16px; padding:10px; }
+nav.side button { display:flex; align-items:center; gap:12px; width:100%; padding:12px 14px; border:0; border-radius:12px;
+           background:transparent; color:var(--cream); font:inherit; font-size:15px; text-align:left; cursor:pointer; }
+nav.side button svg { flex:none; }
+nav.side button:hover { background:rgba(247,233,215,.06); }
+nav.side button.active { background:var(--plum); box-shadow:inset 3px 0 0 var(--gold); font-weight:700; }
+main { flex:1; min-width:0; max-width:720px; }
+.view { display:none; gap:16px; }
+.view.active { display:grid; }
+@media (max-width:760px) {
+  .layout { flex-direction:column; gap:16px; }
+  nav.side { position:sticky; top:0; z-index:5; width:100%; flex-direction:row; padding:6px; }
+  nav.side button { flex-direction:column; justify-content:center; gap:4px; padding:8px 4px; font-size:13px; text-align:center; }
+  main { width:100%; }
+}
 h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:center; }
 .sub { color:var(--cream); opacity:.7; font-size:14px; text-align:center; }
 
@@ -84,21 +100,32 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
   <h1>VelvetHome</h1>
   <p>temperatura w Twoim domu</p>
 </header>
+<div class="layout">
+<nav class="side" id="nav">
+  <button data-view="temperatura"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 1 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 11v6"/></svg><span>Temperatura</span></button>
+  <button data-view="wilgotnosc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></svg><span>Wilgotność</span></button>
+  <button data-view="gaz"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2-4.6.3 1.7 1.3 2.6 2.3 2.6C11 8 12 6 12 3z"/></svg><span>Licznik gazu</span></button>
+</nav>
 <main>
-  <section>
-    <div class="tiles" id="tiles">
-      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">__VALUE__</div><div class="when">m³ · __TIMESTAMP__</div></div>
-    </div>
-  </section>
-
-  <section>
+  <section class="view" id="v-temperatura">
     <h2>Temperatura</h2>
+    <div class="tiles" id="tilesTemp"></div>
     <div class="chips">
       <button class="chip" data-h="24">Ostatnie 24h</button>
       <button class="chip" data-h="12">Ostatnie 12h</button>
       <button class="chip" data-h="6">Ostatnie 6h</button>
     </div>
     <div id="tempCards"></div>
+  </section>
+
+  <section class="view" id="v-wilgotnosc">
+    <h2>Wilgotność</h2>
+    <div class="tiles" id="tilesHum"></div>
+    <div class="chips">
+      <button class="chip" data-h="24">Ostatnie 24h</button>
+      <button class="chip" data-h="12">Ostatnie 12h</button>
+      <button class="chip" data-h="6">Ostatnie 6h</button>
+    </div>
     <div class="chartcard">
       <h3>Wilgotność</h3>
       <div class="chart"><canvas id="chHum"></canvas></div>
@@ -106,8 +133,9 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
     </div>
   </section>
 
-  <section>
-    <h2>Stan Licznika Gazu</h2>
+  <section class="view" id="v-gaz">
+    <h2>Licznik gazu</h2>
+    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">__VALUE__ m³</div><div class="when">__TIMESTAMP__</div></div></div>
     <div class="sub">Ostatnia aktualizacja: __TIMESTAMP__</div>
     __STATUS__
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>__USAGE24__ m³</b></div>
@@ -125,6 +153,7 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
     </div>
   </section>
 </main>
+</div>
 
 <script>
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -226,14 +255,20 @@ function timeChart(canvas, datasets, unit, digits) {
 }
 
 // kafelki i karty wykresów dla każdego pomieszczenia
-const tilesEl = document.getElementById('tiles'), cardsEl = document.getElementById('tempCards');
+const tilesTemp = document.getElementById('tilesTemp'), tilesHum = document.getElementById('tilesHum');
+const cardsEl = document.getElementById('tempCards');
 cardsEl.style.cssText = 'display:grid; gap:16px';
 ROOMS.forEach((r, i) => {
-  const tile = document.createElement('div');
+  const tile = document.createElement('div');   // zakładka Temperatura: temperatura, godzina, bateria
   tile.className = 'tile';
   tile.innerHTML = `<div class="lbl">${r.name}</div><div class="val" id="now_${r.id}" style="color:${r.color}">–</div>` +
-                   `<div class="hum" id="hum_${r.id}"></div><div class="when" id="when_${r.id}"></div><div class="bat" id="bat_${r.id}"></div>`;
-  tilesEl.insertBefore(tile, tilesEl.children[i]);
+                   `<div class="when" id="when_${r.id}"></div><div class="bat" id="bat_${r.id}"></div>`;
+  tilesTemp.appendChild(tile);
+  const htile = document.createElement('div');  // zakładka Wilgotność: wilgotność i godzina
+  htile.className = 'tile';
+  htile.innerHTML = `<div class="lbl">${r.name}</div><div class="val" id="hnow_${r.id}" style="color:${r.color}">–</div>` +
+                    `<div class="when" id="hwhen_${r.id}"></div>`;
+  tilesHum.appendChild(htile);
   const card = document.createElement('div');
   card.className = 'chartcard';
   card.innerHTML = `<h3>${r.name}</h3><div class="chart"><canvas id="ch_${r.id}"></canvas></div><div class="stats" id="st_${r.id}"></div>`;
@@ -289,13 +324,15 @@ function updateTile(r) {
   const bat = batteryInfo(batRow ? batRow.bat : null), batEl = document.getElementById('bat_' + r.id);
   batEl.innerHTML = bat ? batteryIcon(bat.level) + '<span>bateria ' + bat.label + '</span>' : '';
   batEl.classList.toggle('low', !!(bat && bat.low));
-  const when = document.getElementById('when_' + r.id);
+  const humRow = [...r.rows].reverse().find(p => p.hum !== null);
   document.getElementById('now_' + r.id).textContent = last ? last.temp.toFixed(1) + '°' : '–';
-  document.getElementById('hum_' + r.id).textContent = last && last.hum !== null ? 'wilgotność ' + last.hum.toFixed(0) + '%' : '';
-  if (!last) { when.textContent = r.error ? 'błąd pobierania' : 'brak danych'; return; }
-  const stale = Date.now() - last.t > STALE_MS;
-  when.textContent = hhmm(last.t) + (stale ? ' · nieaktualne' : '');
-  when.classList.toggle('stale', stale);
+  document.getElementById('hnow_' + r.id).textContent = humRow ? humRow.hum.toFixed(0) + '%' : '–';
+  for (const [el, row] of [[document.getElementById('when_' + r.id), last], [document.getElementById('hwhen_' + r.id), humRow]]) {
+    if (!row) { el.textContent = r.error ? 'błąd pobierania' : 'brak danych'; continue; }
+    const stale = Date.now() - row.t > STALE_MS;
+    el.textContent = hhmm(row.t) + (stale ? ' · nieaktualne' : '');
+    el.classList.toggle('stale', stale);
+  }
 }
 
 document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
@@ -313,8 +350,25 @@ ROOMS.forEach(r => {
     .finally(() => { updateTile(r); redraw(); });
 });
 
-// Odświeżanie co 60 s (z omijaniem cache)
-setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 60000);
+// ---------- ZAKŁADKI ----------
+const VIEWS = ['temperatura', 'wilgotnosc', 'gaz'];
+function showView(v) {
+  if (!VIEWS.includes(v)) v = 'temperatura';
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  VIEWS.forEach(id => document.getElementById('v-' + id).classList.toggle('active', id === v));
+  try { localStorage.setItem('view', v); } catch (e) {}
+  if (location.hash !== '#' + v) history.replaceState(null, '', '#' + v);
+  // wykresy z ukrytej zakładki dostają właściwy rozmiar po jej pokazaniu
+  requestAnimationFrame(() => Object.values(Chart.instances).forEach(c => c.resize()));
+}
+document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => showView(b.dataset.view)));
+window.addEventListener('hashchange', () => showView(location.hash.slice(1)));
+let startView = location.hash.slice(1);
+if (!VIEWS.includes(startView)) { try { startView = localStorage.getItem('view'); } catch (e) {} }
+showView(startView);
+
+// Odświeżanie co 60 s (z omijaniem cache), z zachowaniem wybranej zakładki
+setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now() + window.location.hash; }, 60000);
 </script>
 </body>
 </html>
