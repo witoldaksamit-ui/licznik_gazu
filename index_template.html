@@ -198,7 +198,16 @@ function timeChart(canvas, datasets, unit, digits) {
     type: 'line',
     data: { datasets },
     options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
-      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      // Jedna seria: najbliższy punkt w poziomie. Kilka serii (wilgotność): najbliższy punkt na płaszczyźnie,
+      // czyli okienko pokazuje tę linię, nad którą jest kursor.
+      interaction: { mode: 'nearest', axis: datasets.length > 1 ? 'xy' : 'x', intersect: false },
+      // Kilka serii: wskazana linia zostaje w pełnym kolorze, pozostałe są przygaszone
+      onHover: datasets.length > 1 ? (e, els, ch) => {
+        const act = els.length ? els[0].datasetIndex : -1;
+        ch.data.datasets.forEach((d, k) => { d.baseColor = d.baseColor || d.borderColor;
+          d.borderColor = d.backgroundColor = (act < 0 || k === act) ? d.baseColor : d.baseColor + '40'; });
+        ch.update('none');
+      } : undefined,
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
         label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + (i.raw.raw ?? i.parsed.y).toFixed(digits) + unit } } },
