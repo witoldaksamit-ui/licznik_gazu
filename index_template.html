@@ -134,7 +134,7 @@ function gasChart(id, labels, data, color, zero, unit) {
     data: { labels, datasets: [{ data, borderColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 0, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { x: { ticks: { color: tick, maxTicksLimit: 4 }, grid: { color: grid } },
-                y: { beginAtZero: zero, ticks: { color: tick, callback: v => v + unit }, grid: { color: grid } } } }
+                y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
 gasChart('gasStateChart', __STATE_LABELS__, __STATE_VALUES__, css('--level'), false, '');
@@ -182,7 +182,13 @@ function timeChart(canvas, datasets, unit, digits) {
         title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
         label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + i.parsed.y.toFixed(digits) + unit } } },
       scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
-                y: { ticks: { color: tick, callback: v => v + (unit === ' °C' ? '°' : '%') }, grid: { color: grid } } } }
+                y: { ticks: { color: tick, precision: unit === ' °C' ? 1 : 0,
+                           callback: v => unit === ' °C' ? v.toFixed(1) + '°' : Math.round(v) + '%' },
+                  // Przy prawie płaskich danych oś ma co najmniej 1 °C (albo 4 %) zakresu,
+                  // żeby po zaokrągleniu etykiety się nie powtarzały
+                  afterDataLimits: sc => { const need = unit === ' °C' ? 1 : 4;
+                    if (sc.max - sc.min < need) { const mid = (sc.max + sc.min) / 2; sc.min = mid - need / 2; sc.max = mid + need / 2; } },
+                  grid: { color: grid } } } }
   });
 }
 
