@@ -17,7 +17,7 @@
   --plum:#9C2A5E; --plum-dark:#5E1239; --panel:#2A0B1C;
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
-  --salon:#EF5350; --dwor:#66BB6A; --pralnia:#42A5F5;   /* kolory pomieszczeń (jak w aplikacji) */
+  --salon:#EF5350; --sypialnia:#AB47BC; --dwor:#66BB6A; --pralnia:#42A5F5;   /* kolory pomieszczeń (jak w aplikacji) */
   --err:#FF8A80;
 }
 * { box-sizing:border-box; }
@@ -39,6 +39,7 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 
 /* kafelki jak karta "BIEŻĄCY ODCZYT" */
 .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.tile.wide { grid-column:1 / -1; }
 @media (max-width:560px) { .tiles { grid-template-columns:repeat(2,1fr); } }
 .tile { background:var(--panel); border-radius:16px; padding:16px 8px; text-align:center; }
 .tile .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
@@ -83,7 +84,7 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 <main>
   <section>
     <div class="tiles" id="tiles">
-      <div class="tile"><div class="lbl">Gaz</div><div class="val">201.505</div><div class="when">m³ · 2026-11-21 08:37:41</div></div>
+      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">201.505</div><div class="when">m³ · 2026-11-21 08:41:47</div></div>
     </div>
   </section>
 
@@ -104,12 +105,12 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section>
     <h2>Stan Licznika Gazu</h2>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-21 08:37:41</div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-21 08:41:47</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>6.350 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795246662" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795246908" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -136,17 +137,18 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => v + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["08:43", "09:12", "09:42", "10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505], css('--level'), false, '');
-gasChart('gasDiffChart', ["09:12", "09:42", "10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["08:43", "09:12", "09:42", "10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505, 201.505], css('--level'), false, '');
+gasChart('gasDiffChart', ["09:12", "09:42", "10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37, 0.0], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
 const DATA_BASE = 'https://raw.githubusercontent.com/witoldaksamit-ui/velvethome.github.io/main/';
 const STALE_MS = 60 * 60 * 1000;   // odczyt starszy niż godzina jest oznaczany jako nieaktualny
 const ROOMS = [
-  { id: 'salon',     name: 'Salon',   file: 'temperatures_salon.txt',     color: css('--salon') },
-  { id: 'sypialnia', name: 'Dwór',    file: 'temperatures_sypialnia.txt', color: css('--dwor') },
-  { id: 'pralnia',   name: 'Pralnia', file: 'temperatures_pralnia.txt',   color: css('--pralnia') }
+  { id: 'salon',     name: 'Salon',     file: 'temperatures_salon.txt',     color: css('--salon') },
+  { id: 'sypialnia', name: 'Sypialnia', file: 'temperatures_sypialnia.txt', color: css('--sypialnia') },
+  { id: 'pralnia',   name: 'Pralnia',   file: 'temperatures_pralnia.txt',   color: css('--pralnia') },
+  { id: 'dwor',      name: 'Dwór',      file: 'temperatures_dwor.txt',      color: css('--dwor') }
 ];
 
 const hhmm = t => new Date(t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
