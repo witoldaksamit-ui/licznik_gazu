@@ -131,8 +131,12 @@ const grid = 'rgba(0,0,0,0.12)', tick = 'rgba(58,58,58,0.8)';
 function gasChart(id, labels, data, color, zero, unit) {
   new Chart(document.getElementById(id), {
     type: 'line',
-    data: { labels, datasets: [{ data, borderColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 0, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color, borderWidth: 3, tension: 0.1, fill: false, pointRadius: 0, pointHoverRadius: 4, borderCapStyle: 'round', borderJoinStyle: 'round' }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },   // okienko z wartością po najechaniu myszą
+      plugins: { legend: { display: false }, tooltip: { callbacks: {
+        title: i => 'Godzina ' + i[0].label,
+        label: i => i.parsed.y.toFixed(3) + ' m³' } } },
       scales: { x: { ticks: { color: tick, maxTicksLimit: 4 }, grid: { color: grid } },
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
@@ -172,6 +176,23 @@ const lineStyle = color => ({ borderColor: color, backgroundColor: color, border
   cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4,
   borderCapStyle: 'round', borderJoinStyle: 'round' });
 
+// Wygładzanie wykresów temperatury i wilgotności: średnia z pomiarów w oknie ±15 min.
+// Czujniki podają wartości co 0,1 °C (wilgotność co 1 %), więc bez tego linia jest schodkowa.
+// Okienko po najechaniu myszą pokazuje rzeczywisty pomiar (pole raw), a min/max liczone są z pomiarów.
+const SMOOTH_MS = 15 * 60 * 1000;
+function smoothSeries(rows, key) {
+  const pts = rows.filter(p => p[key] !== null);
+  const out = [];
+  let lo = 0, hi = 0, sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const t = pts[i].t;
+    while (hi < pts.length && pts[hi].t <= t + SMOOTH_MS) { sum += pts[hi][key]; hi++; }
+    while (pts[lo].t < t - SMOOTH_MS) { sum -= pts[lo][key]; lo++; }
+    out.push({ x: t, y: sum / (hi - lo), raw: pts[i][key] });
+  }
+  return out;
+}
+
 function timeChart(canvas, datasets, unit, digits) {
   return new Chart(canvas, {
     type: 'line',
@@ -180,7 +201,7 @@ function timeChart(canvas, datasets, unit, digits) {
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: {
         title: i => new Date(i[0].parsed.x).toLocaleString('pl-PL'),
-        label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + i.parsed.y.toFixed(digits) + unit } } },
+        label: i => (datasets.length > 1 ? i.dataset.label + ': ' : '') + (i.raw.raw ?? i.parsed.y).toFixed(digits) + unit } } },
       scales: { x: { type: 'linear', ticks: { color: tick, maxTicksLimit: 4, callback: v => hhmm(v) }, grid: { color: grid } },
                 y: { ticks: { color: tick, precision: unit === ' °C' ? 1 : 0,
                            callback: v => unit === ' °C' ? v.toFixed(1) + '°' : Math.round(v) + '%' },
@@ -218,7 +239,7 @@ function redraw() {
   const now = Date.now(), from = now - hours * 3600000;
   ROOMS.forEach((r, i) => {
     const rows = r.rows.filter(p => p.t >= from);
-    r.chart.data.datasets[0].data = rows.map(p => ({ x: p.t, y: p.temp }));
+    r.chart.data.datasets[0].data = smoothSeries(rows, 'temp');
     r.chart.options.scales.x.min = from; r.chart.options.scales.x.max = now;
     r.chart.update();
     const st = document.getElementById('st_' + r.id);
@@ -229,7 +250,7 @@ function redraw() {
       st.innerHTML = `<div>Minimum<b style="color:${r.color}">${Math.min(...v).toFixed(1)}°C</b></div>` +
                      `<div>Maksimum<b style="color:${r.color}">${Math.max(...v).toFixed(1)}°C</b></div>`;
     }
-    chHum.data.datasets[i].data = rows.filter(p => p.hum !== null).map(p => ({ x: p.t, y: p.hum }));
+    chHum.data.datasets[i].data = smoothSeries(rows, 'hum');
   });
   chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
   chHum.update();
