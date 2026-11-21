@@ -18,7 +18,7 @@
   --chart-bg:#FFFFFF; --chart-text:#3A3A3A;
   --home:#66BB6A; --out:#42A5F5; --level:#EF6C00; --flow:#8E24AA;
   --salon:#EF5350; --sypialnia:#AB47BC; --dwor:#66BB6A; --pralnia:#42A5F5;   /* kolory pomieszczeń (jak w aplikacji) */
-  --err:#FF8A80;
+  --err:#FF8A80; --good:#7BD88F;
 }
 * { box-sizing:border-box; }
 html { background:var(--bg-bottom); }
@@ -65,13 +65,16 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 .stats { display:flex; justify-content:space-evenly; margin-top:8px; text-align:center; font-size:12px; color:rgba(58,58,58,.7); }
 .stats b { display:block; font-size:18px; margin-top:2px; }
 
-.ok { font-size:13px; color:var(--gold); background:var(--panel); padding:10px 12px; border-radius:12px; text-align:center; }
+.ok { font-size:13px; color:var(--good); background:var(--panel); padding:10px 12px; border-radius:12px; text-align:center; }
 .uwaga { font-size:13px; color:var(--err); background:var(--panel); padding:10px 12px; border-radius:12px; text-align:center; }
 .usage { display:flex; justify-content:space-between; align-items:baseline; background:var(--panel); border-radius:16px; padding:16px 20px; }
 .usage .sub { text-align:left; }
 .usage b { font-size:22px; color:var(--gold); }
 .photo { background:var(--panel); border-radius:16px; padding:12px; }
 .photo h3 { margin:0 0 10px; font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); text-align:center; }
+/* Kolor wyniku ostatniego odczytu gazu: zielony po udanym (.ok), czerwony po nieudanym (.uwaga) */
+section:has(> .ok) .usage b, section:has(> .ok) .photo h3 { color:var(--good); }
+section:has(> .uwaga) .usage b, section:has(> .uwaga) .photo h3 { color:var(--err); }
 img.meter { max-width:100%; height:auto; border-radius:12px; display:block; margin:0 auto; }
 </style>
 </head>
@@ -84,7 +87,7 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 <main>
   <section>
     <div class="tiles" id="tiles">
-      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">202.214</div><div class="when">m³ · 2026-11-21 09:58:23</div></div>
+      <div class="tile wide"><div class="lbl">Gaz</div><div class="val">202.214</div><div class="when">m³ · 2026-11-21 10:01:33</div></div>
     </div>
   </section>
 
@@ -105,12 +108,12 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section>
     <h2>Stan Licznika Gazu</h2>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-21 09:58:23</div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-21 10:01:33</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>7.059 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795251504" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795251695" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -141,8 +144,8 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54", "09:55", "09:58"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505, 201.505, 201.848, 202.214, 202.214, 202.214, 202.214, 202.214], css('--level'), false, '');
-gasChart('gasDiffChart', ["10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54", "09:55", "09:58"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37, 0.0, 0.343, 0.366, 0.0, 0.0, 0.0, 0.0], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["10:12", "10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54", "09:55", "09:58", "10:01"], [195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.155, 195.243, 195.918, 196.345, 196.728, 197.105, 197.471, 197.819, 198.169, 198.462, 198.847, 199.081, 199.081, 199.403, 199.403, 199.403, 199.403, 199.403, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.419, 199.886, 200.373, 200.767, 201.135, 201.505, 201.505, 201.848, 202.214, 202.214, 202.214, 202.214, 202.214, 202.214], css('--level'), false, '');
+gasChart('gasDiffChart', ["10:42", "11:12", "11:28", "11:42", "12:12", "12:42", "13:12", "13:42", "14:11", "14:41", "15:11", "15:41", "16:11", "16:41", "17:11", "17:41", "18:11", "18:41", "19:10", "19:40", "20:10", "20:40", "21:10", "21:40", "22:10", "22:40", "23:10", "23:39", "00:39", "01:09", "01:39", "02:09", "02:39", "03:08", "03:38", "04:08", "04:38", "05:08", "05:38", "06:08", "06:38", "07:07", "07:37", "08:07", "08:37", "08:41", "09:07", "09:37", "09:50", "09:54", "09:55", "09:58", "10:01"], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.088, 0.675, 0.427, 0.383, 0.377, 0.366, 0.348, 0.35, 0.293, 0.385, 0.234, 0.0, 0.322, 0.0, 0.0, 0.0, 0.0, 0.016, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.467, 0.487, 0.394, 0.368, 0.37, 0.0, 0.343, 0.366, 0.0, 0.0, 0.0, 0.0, 0.0], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
