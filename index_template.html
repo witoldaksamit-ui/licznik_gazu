@@ -176,10 +176,10 @@ const lineStyle = color => ({ borderColor: color, backgroundColor: color, border
   cubicInterpolationMode: 'monotone', fill: false, pointRadius: 0, pointHoverRadius: 4,
   borderCapStyle: 'round', borderJoinStyle: 'round' });
 
-// Wygładzanie wykresów temperatury i wilgotności: średnia z pomiarów w oknie ±15 min.
+// Wygładzanie wykresów temperatury i wilgotności: średnia z pomiarów w oknie ±3 min.
 // Czujniki podają wartości co 0,1 °C (wilgotność co 1 %), więc bez tego linia jest schodkowa.
 // Okienko po najechaniu myszą pokazuje rzeczywisty pomiar (pole raw), a min/max liczone są z pomiarów.
-const SMOOTH_MS = 15 * 60 * 1000;
+const SMOOTH_MS = 3 * 60 * 1000;
 function smoothSeries(rows, key) {
   const pts = rows.filter(p => p[key] !== null);
   const out = [];
