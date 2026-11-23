@@ -65,7 +65,18 @@ h2 { margin:0; font-size:24px; font-weight:700; color:var(--cream); text-align:c
 .tile .bat { font-size:11px; color:var(--cream); opacity:.8; margin-top:4px; display:flex; align-items:center; justify-content:center; gap:5px; }
 .tile .bat.low { color:var(--err); opacity:1; }
 .tile .when.stale { color:var(--err); opacity:1; }
-.legend { display:flex; justify-content:center; gap:16px; margin-top:8px; font-size:12px; color:rgba(58,58,58,.8); }
+/* osuszacz w zakładce Wilgotność */
+.dehum { background:var(--panel); border-radius:16px; padding:16px 18px; }
+.dehum .top { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.dehum .lbl { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
+.dehum .state { font-size:13px; font-weight:700; }
+.dehum .vals { display:flex; justify-content:space-around; margin:12px 0 8px; text-align:center; }
+.dehum .v { font-size:28px; font-weight:700; }
+.dehum .k { font-size:11px; opacity:.7; margin-top:2px; }
+.dehum .info { font-size:12px; opacity:.75; text-align:center; }
+.dehum .info.stale { color:var(--err); opacity:1; }
+.dehum .alert { margin-top:10px; padding:8px 10px; border-radius:10px; background:rgba(255,138,128,.15); color:var(--err); font-size:13px; font-weight:700; text-align:center; }
+.legend { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 16px; margin-top:8px; font-size:12px; color:rgba(58,58,58,.8); }
 .legend i { display:inline-block; width:12px; height:3px; border-radius:2px; vertical-align:middle; margin-right:6px; }
 
 /* chipy zakresu jak FilterChip */
@@ -121,6 +132,15 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
   <section class="view" id="v-wilgotnosc">
     <h2>Wilgotność</h2>
     <div class="tiles" id="tilesHum"></div>
+    <div class="dehum" id="dehum">
+      <div class="top"><span class="lbl">Osuszacz · pralnia</span><span class="state" id="dhState">–</span></div>
+      <div class="vals">
+        <div><div class="v" id="dhHum" style="color:var(--gold)">–</div><div class="k">wilgotność zmierzona</div></div>
+        <div><div class="v" id="dhTarget">–</div><div class="k">wilgotność docelowa</div></div>
+      </div>
+      <div class="info" id="dhInfo"></div>
+      <div class="alert" id="dhAlert" hidden></div>
+    </div>
     <div class="chips">
       <button class="chip" data-h="24">Ostatnie 24h</button>
       <button class="chip" data-h="12">Ostatnie 12h</button>
@@ -135,13 +155,13 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section class="view" id="v-gaz">
     <h2>Licznik gazu</h2>
-    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">215.733 m³</div><div class="when">2026-11-23 18:22:20</div></div></div>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-23 18:22:20</div>
+    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">215.733 m³</div><div class="when">2026-11-23 18:47:26</div></div></div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-23 18:47:26</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
-    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>4.808 m³</b></div>
+    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>4.662 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795454547" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795456052" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -173,8 +193,8 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["18:28", "19:00", "19:28", "19:58", "20:28", "20:58", "21:28", "21:58", "22:27", "22:57", "23:27", "23:57", "00:27", "00:57", "01:27", "01:57", "02:26", "02:56", "03:26", "03:56", "04:26", "04:56", "05:26", "05:55", "06:25", "06:55", "07:25", "07:55", "08:25", "08:54", "09:25", "09:54", "10:24", "10:54", "11:24", "11:54", "12:23", "12:53", "13:23", "13:53", "14:23", "14:53", "15:23", "15:53", "16:23", "16:52", "17:23", "17:52", "18:22"], [210.925, 211.071, 211.132, 211.627, 212.037, 212.64, 212.64, 212.64, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.905, 213.452, 213.977, 214.397, 214.775, 214.963, 215.374, 215.733], css('--level'), false, '');
-gasChart('gasDiffChart', ["19:00", "19:28", "19:58", "20:28", "20:58", "21:28", "21:58", "22:27", "22:57", "23:27", "23:57", "00:27", "00:57", "01:27", "01:57", "02:26", "02:56", "03:26", "03:56", "04:26", "04:56", "05:26", "05:55", "06:25", "06:55", "07:25", "07:55", "08:25", "08:54", "09:25", "09:54", "10:24", "10:54", "11:24", "11:54", "12:23", "12:53", "13:23", "13:53", "14:23", "14:53", "15:23", "15:53", "16:23", "16:52", "17:23", "17:52", "18:22"], [0.146, 0.061, 0.495, 0.41, 0.603, 0.0, 0.0, 0.028, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.046, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.191, 0.547, 0.525, 0.42, 0.378, 0.188, 0.411, 0.359], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["19:00", "19:28", "19:58", "20:28", "20:58", "21:28", "21:58", "22:27", "22:57", "23:27", "23:57", "00:27", "00:57", "01:27", "01:57", "02:26", "02:56", "03:26", "03:56", "04:26", "04:56", "05:26", "05:55", "06:25", "06:55", "07:25", "07:55", "08:25", "08:54", "09:25", "09:54", "10:24", "10:54", "11:24", "11:54", "12:23", "12:53", "13:23", "13:53", "14:23", "14:53", "15:23", "15:53", "16:23", "16:52", "17:23", "17:52", "18:22", "18:47"], [211.071, 211.132, 211.627, 212.037, 212.64, 212.64, 212.64, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.668, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.714, 212.905, 213.452, 213.977, 214.397, 214.775, 214.963, 215.374, 215.733, 215.733], css('--level'), false, '');
+gasChart('gasDiffChart', ["19:28", "19:58", "20:28", "20:58", "21:28", "21:58", "22:27", "22:57", "23:27", "23:57", "00:27", "00:57", "01:27", "01:57", "02:26", "02:56", "03:26", "03:56", "04:26", "04:56", "05:26", "05:55", "06:25", "06:55", "07:25", "07:55", "08:25", "08:54", "09:25", "09:54", "10:24", "10:54", "11:24", "11:54", "12:23", "12:53", "13:23", "13:53", "14:23", "14:53", "15:23", "15:53", "16:23", "16:52", "17:23", "17:52", "18:22", "18:47"], [0.061, 0.495, 0.41, 0.603, 0.0, 0.0, 0.028, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.046, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.191, 0.547, 0.525, 0.42, 0.378, 0.188, 0.411, 0.359, 0.0], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
@@ -276,10 +296,40 @@ ROOMS.forEach((r, i) => {
   r.rows = [];
   r.chart = timeChart(document.getElementById('ch_' + r.id), [{ label: r.name, data: [], ...lineStyle(r.color) }], ' °C', 1);
 });
+// Osuszacz (plik osuszacz.txt): <czas>,<włączony 1/0>,<tryb 0 cel / 1 ciągłe>,<cel %>,<wentylator 0/2>,<wilgotność %>,<błędy>
+const DEHUM = { name: 'Osuszacz', file: 'osuszacz.txt', color: css('--gold'), rows: [] };
 const chHum = timeChart(document.getElementById('chHum'),
-  ROOMS.map(r => ({ label: r.name, data: [], ...lineStyle(r.color) })), ' %', 0);
+  [...ROOMS.map(r => ({ label: r.name, data: [], ...lineStyle(r.color) })),
+   { label: DEHUM.name, data: [], ...lineStyle(DEHUM.color), borderDash: [6, 4] }], ' %', 0);
 document.getElementById('humLegend').innerHTML =
-  ROOMS.map(r => `<span><i style="background:${r.color}"></i>${r.name}</span>`).join('');
+  ROOMS.map(r => `<span><i style="background:${r.color}"></i>${r.name}</span>`).join('') +
+  `<span><i style="background:${DEHUM.color}"></i>${DEHUM.name} (pomiar)</span>`;
+
+function parseDehum(text) {
+  return text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => {
+    const p = l.split(',');
+    return { t: Date.parse(p[0]), on: p[1] === '1', mode: +p[2], target: +p[3], fan: +p[4], hum: +p[5], fault: +p[6] || 0 };
+  }).filter(r => !isNaN(r.t) && !isNaN(r.hum)).sort((a, b) => a.t - b.t);
+}
+const FAULTS = ['P1', 'E3', 'E5', 'EH', 'E1', 'E2'];   // bity 0-5; bit 6 (64) = pełny zbiornik
+function updateDehum() {
+  const last = DEHUM.rows[DEHUM.rows.length - 1];
+  const $ = id => document.getElementById(id);
+  if (!last) { $('dhState').textContent = DEHUM.error ? 'błąd pobierania' : 'brak danych'; $('dhInfo').textContent = ''; return; }
+  const reached = last.mode === 0 && last.hum <= last.target;
+  $('dhState').textContent = !last.on ? 'Wyłączony' : last.mode === 1 ? 'Osusza ciągle' : reached ? 'Cel osiągnięty' : 'Osusza';
+  $('dhState').style.color = last.on ? 'var(--good)' : 'rgba(247,233,215,.6)';
+  $('dhHum').textContent = last.hum + '%';
+  $('dhTarget').textContent = last.mode === 1 ? 'ciągłe' : last.target + '%';
+  const stale = Date.now() - last.t > STALE_MS;
+  $('dhInfo').textContent = [last.mode === 1 ? 'tryb CONT / TURBO' : (last.target === 60 ? 'tryb DRY / COMFORT' : 'tryb DRY'),
+    'wentylator ' + (last.fan >= 2 ? 'wysoki' : 'niski'), hhmm(last.t) + (stale ? ' · nieaktualne' : '')].join(' · ');
+  $('dhInfo').classList.toggle('stale', stale);
+  const alerts = [];
+  if (last.fault & 64) alerts.push('Pełny zbiornik – opróżnij osuszacz');
+  FAULTS.forEach((code, bit) => { if (last.fault & (1 << bit)) alerts.push('Błąd ' + code); });
+  $('dhAlert').hidden = !alerts.length; $('dhAlert').textContent = alerts.join(' · ');
+}
 
 function redraw() {
   document.querySelectorAll('.chip').forEach(b => b.classList.toggle('active', Number(b.dataset.h) === hours));
@@ -299,6 +349,7 @@ function redraw() {
     }
     chHum.data.datasets[i].data = smoothSeries(rows, 'hum');
   });
+  chHum.data.datasets[ROOMS.length].data = smoothSeries(DEHUM.rows.filter(p => p.t >= from), 'hum');
   chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
   chHum.update();
 }
@@ -349,6 +400,12 @@ ROOMS.forEach(r => {
     .catch(() => { r.error = true; })
     .finally(() => { updateTile(r); redraw(); });
 });
+
+fetch(DATA_BASE + DEHUM.file + '?ts=' + Date.now(), { cache: 'no-store' })
+  .then(res => { if (!res.ok) throw new Error(res.status); return res.text(); })
+  .then(txt => { DEHUM.rows = parseDehum(txt); })
+  .catch(() => { DEHUM.error = true; })
+  .finally(() => { updateDehum(); redraw(); });
 
 // ---------- ZAKŁADKI ----------
 const VIEWS = ['temperatura', 'wilgotnosc', 'gaz'];
