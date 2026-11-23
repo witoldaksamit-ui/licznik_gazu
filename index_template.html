@@ -121,12 +121,28 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
   <section class="view" id="v-temperatura">
     <h2>Temperatura</h2>
     <div class="tiles" id="tilesTemp"></div>
+    <div class="dehum" id="piec">
+      <div class="top"><span class="lbl">Sterownik pieca</span><span class="state" id="pcState">–</span></div>
+      <div class="vals">
+        <div><div class="v" id="pcTemp" style="color:var(--level)">–</div><div class="k">temperatura</div></div>
+        <div><div class="v" id="pcSet">–</div><div class="k">nastawa</div></div>
+        <div><div class="v" id="pcHours">–</div><div class="k">grzanie w 24 h</div></div>
+      </div>
+      <div class="info" id="pcInfo"></div>
+      <div class="alert" id="pcAlert" hidden></div>
+    </div>
     <div class="chips">
       <button class="chip" data-h="24">Ostatnie 24h</button>
       <button class="chip" data-h="12">Ostatnie 12h</button>
       <button class="chip" data-h="6">Ostatnie 6h</button>
     </div>
     <div id="tempCards"></div>
+    <div class="chartcard">
+      <h3>Sterownik pieca</h3>
+      <div class="chart"><canvas id="chPiec"></canvas></div>
+      <div class="legend" id="piecLegend"></div>
+      <div class="stats" id="stPiec"></div>
+    </div>
   </section>
 
   <section class="view" id="v-wilgotnosc">
@@ -245,10 +261,11 @@ function smoothSeries(rows, key) {
   return out;
 }
 
-function timeChart(canvas, datasets, unit, digits) {
+function timeChart(canvas, datasets, unit, digits, plugins = []) {
   return new Chart(canvas, {
     type: 'line',
     data: { datasets },
+    plugins,
     options: { responsive: true, maintainAspectRatio: false, parsing: false, animation: false,
       // Jedna seria: najbliższy punkt w poziomie. Kilka serii (wilgotność): najbliższy punkt na płaszczyźnie,
       // czyli okienko pokazuje tę linię, nad którą jest kursor.
@@ -350,6 +367,7 @@ function redraw() {
     chHum.data.datasets[i].data = smoothSeries(rows, 'hum');
   });
   chHum.data.datasets[ROOMS.length].data = smoothSeries(DEHUM.rows.filter(p => p.t >= from), 'hum');
+  if (window.piecReady) redrawPiec(from, now);   // wykres pieca powstaje niżej w skrypcie
   chHum.options.scales.x.min = from; chHum.options.scales.x.max = now;
   chHum.update();
 }
@@ -400,6 +418,87 @@ ROOMS.forEach(r => {
     .catch(() => { r.error = true; })
     .finally(() => { updateTile(r); redraw(); });
 });
+
+// ---------- STEROWNIK PIECA (plik piec.txt) ----------
+// <czas>,<temperatura>,<nastawa>,<grzeje 1/0>,<tryb>,<bateria %>,<łączność 1/0>,<błędy>,<włączony 1/0>
+const PIEC = { file: 'piec.txt', color: css('--level'), rows: [] };
+const PIEC_MODES = { program: 'harmonogram', manual: 'ręczny', holiday: 'urlop', temporary: 'chwilowy', boost: 'boost', frost: 'przeciwzamrożeniowy' };
+const HEAT_GAP_MS = 10 * 60 * 1000;   // odczyty co 5 min; dłuższa przerwa w danych nie jest liczona jako grzanie
+function parsePiec(text) {
+  return text.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => {
+    const p = l.split(',');
+    return { t: Date.parse(p[0]), temp: parseFloat(p[1]), set: parseFloat(p[2]), heating: p[3] === '1', mode: p[4],
+             battery: p[5] === '' || p[5] === undefined ? null : +p[5], online: p[6] !== '0', fault: +p[7] || 0, on: p[8] !== '0' };
+  }).filter(r => !isNaN(r.t) && !isNaN(r.temp)).sort((a, b) => a.t - b.t);
+}
+// Okresy grzania [od, do] od chwili from; każdy odczyt „grzeje” liczy się do następnego (najwyżej 10 min)
+function heatIntervals(rows, from, now) {
+  const out = [];
+  rows.forEach((r, i) => {
+    if (!r.heating) return;
+    const end = Math.min(i + 1 < rows.length ? rows[i + 1].t : now, r.t + HEAT_GAP_MS);
+    if (end <= from) return;
+    const start = Math.max(r.t, from), last = out[out.length - 1];
+    if (last && start <= last[1]) last[1] = Math.max(last[1], end); else out.push([start, end]);
+  });
+  return out;
+}
+const fmtDur = ms => { const m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' min'; };
+// Zaznaczenie okresów grzania na wykresie (półprzezroczyste pasy w tle)
+const heatBands = { id: 'heatBands', beforeDatasetsDraw(chart) {
+  const { ctx, chartArea: a, scales: { x } } = chart, now = Date.now();
+  ctx.save(); ctx.fillStyle = 'rgba(239,108,0,0.13)';
+  heatIntervals(PIEC.rows, x.min, now).forEach(([s, e]) => {
+    const x0 = Math.max(a.left, x.getPixelForValue(s)), x1 = Math.min(a.right, x.getPixelForValue(e));
+    if (x1 > x0) ctx.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+  });
+  ctx.restore();
+} };
+const chPiec = timeChart(document.getElementById('chPiec'),
+  [{ label: 'Temperatura', data: [], ...lineStyle(PIEC.color) },
+   { label: 'Nastawa', data: [], ...lineStyle(css('--gold')), borderDash: [6, 4], stepped: true, cubicInterpolationMode: 'default', tension: 0 }],
+  ' °C', 1, [heatBands]);
+document.getElementById('piecLegend').innerHTML =
+  `<span><i style="background:${PIEC.color}"></i>Temperatura</span><span><i style="background:${css('--gold')}"></i>Nastawa</span>` +
+  `<span><i style="background:rgba(239,108,0,.35);height:10px"></i>Piec grzeje</span>`;
+window.piecReady = true;
+function redrawPiec(from, now) {
+  const rows = PIEC.rows.filter(p => p.t >= from);
+  chPiec.data.datasets[0].data = smoothSeries(rows, 'temp');
+  chPiec.data.datasets[1].data = rows.map(p => ({ x: p.t, y: p.set, raw: p.set }));
+  chPiec.options.scales.x.min = from; chPiec.options.scales.x.max = now;
+  chPiec.update();
+  const st = document.getElementById('stPiec');
+  if (PIEC.error) { st.textContent = 'Nie udało się pobrać danych'; return; }
+  if (!rows.length) { st.textContent = 'Brak danych dla wybranego zakresu.'; return; }
+  const heat = heatIntervals(PIEC.rows, from, now).reduce((sum, [a, b]) => sum + (b - a), 0);
+  st.innerHTML = `<div>Grzanie w wybranym zakresie<b style="color:${PIEC.color}">${fmtDur(heat)}</b></div>`;
+}
+function updatePiec() {
+  const last = PIEC.rows[PIEC.rows.length - 1], $ = id => document.getElementById(id);
+  if (!last) { $('pcState').textContent = PIEC.error ? 'błąd pobierania' : 'brak danych'; return; }
+  const state = !last.on ? ['Wyłączony', 'rgba(247,233,215,.6)'] : !last.online ? ['Brak łączności', 'var(--err)']
+              : last.heating ? ['Grzeje', 'var(--level)'] : ['Nie grzeje', 'rgba(247,233,215,.75)'];
+  $('pcState').textContent = state[0]; $('pcState').style.color = state[1];
+  $('pcTemp').textContent = last.temp.toFixed(1) + '°';
+  $('pcSet').textContent = last.set.toFixed(1) + '°';
+  const now = Date.now();
+  $('pcHours').textContent = fmtDur(heatIntervals(PIEC.rows, now - 24 * 3600000, now).reduce((s, [a, b]) => s + (b - a), 0));
+  const stale = now - last.t > STALE_MS;
+  $('pcInfo').textContent = ['tryb ' + (PIEC_MODES[last.mode] || last.mode),
+    last.battery !== null ? 'bateria ' + last.battery + '%' : null, hhmm(last.t) + (stale ? ' · nieaktualne' : '')].filter(Boolean).join(' · ');
+  $('pcInfo').classList.toggle('stale', stale);
+  const alerts = [];
+  if (!last.online) alerts.push('Termostat nie ma łączności z odbiornikiem przy piecu');
+  if (last.fault & 1) alerts.push('Błąd czujnika temperatury');
+  if (last.battery !== null && last.battery <= 20) alerts.push('Słaba bateria termostatu – wymień baterie');
+  $('pcAlert').hidden = !alerts.length; $('pcAlert').textContent = alerts.join(' · ');
+}
+fetch(DATA_BASE + PIEC.file + '?ts=' + Date.now(), { cache: 'no-store' })
+  .then(res => { if (!res.ok) throw new Error(res.status); return res.text(); })
+  .then(txt => { PIEC.rows = parsePiec(txt); })
+  .catch(() => { PIEC.error = true; })
+  .finally(() => { updatePiec(); redraw(); });
 
 fetch(DATA_BASE + DEHUM.file + '?ts=' + Date.now(), { cache: 'no-store' })
   .then(res => { if (!res.ok) throw new Error(res.status); return res.text(); })
