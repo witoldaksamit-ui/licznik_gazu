@@ -171,13 +171,13 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section class="view" id="v-gaz">
     <h2>Licznik gazu</h2>
-    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">234.324 m³</div><div class="when">2026-11-26 17:31:51</div></div></div>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-26 17:31:51</div>
+    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">234.639 m³</div><div class="when">2026-11-26 18:01:40</div></div></div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-26 18:01:40</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
-    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>0.358 m³</b></div>
+    <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>0.673 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795710716" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795712503" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -209,8 +209,8 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["17:10", "17:31"], [233.966, 234.324], css('--level'), false, '');
-gasChart('gasDiffChart', ["17:31"], [0.358], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["17:10", "17:31", "18:01"], [233.966, 234.324, 234.639], css('--level'), false, '');
+gasChart('gasDiffChart', ["17:31", "18:01"], [0.358, 0.315], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
