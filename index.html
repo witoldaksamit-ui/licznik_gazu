@@ -171,13 +171,13 @@ img.meter { max-width:100%; height:auto; border-radius:12px; display:block; marg
 
   <section class="view" id="v-gaz">
     <h2>Licznik gazu</h2>
-    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">236.692 m³</div><div class="when">2026-11-27 03:29:17</div></div></div>
-    <div class="sub">Ostatnia aktualizacja: 2026-11-27 03:29:17</div>
+    <div class="tiles"><div class="tile wide"><div class="lbl">Bieżący odczyt</div><div class="val">236.692 m³</div><div class="when">2026-11-27 03:58:58</div></div></div>
+    <div class="sub">Ostatnia aktualizacja: 2026-11-27 03:58:58</div>
     <div class="ok">✓ Ostatni odczyt się udał.</div>
     <div class="usage"><span class="sub">Zużycie gazu w ostatnich 24 h</span><b>2.726 m³</b></div>
     <div class="photo">
       <h3>Aktualne zdjęcie z gazomierza</h3>
-      <img class="meter" src="img_tmp/alg.jpg?t=1795746559" alt="Zdjęcie licznika">
+      <img class="meter" src="img_tmp/alg.jpg?t=1795748340" alt="Zdjęcie licznika">
     </div>
     <div class="chartcard">
       <h3>Zmiana stanu licznika – ostatnie 24h (m³)</h3>
@@ -209,8 +209,8 @@ function gasChart(id, labels, data, color, zero, unit) {
                 y: { beginAtZero: zero, ticks: { color: tick, callback: v => Number(v.toFixed(3)) + unit }, grid: { color: grid } } } }
   });
 }
-gasChart('gasStateChart', ["17:10", "17:31", "18:01", "18:31", "19:01", "19:31", "20:01", "20:31", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "00:59", "01:29", "01:59", "02:29", "02:59", "03:29"], [233.966, 234.324, 234.639, 234.932, 235.27, 235.578, 235.578, 236.454, 236.658, 236.658, 236.658, 236.658, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692], css('--level'), false, '');
-gasChart('gasDiffChart', ["17:31", "18:01", "18:31", "19:01", "19:31", "20:01", "20:31", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "00:59", "01:29", "01:59", "02:29", "02:59", "03:29"], [0.358, 0.315, 0.293, 0.338, 0.308, 0.0, 0.876, 0.204, 0.0, 0.0, 0.0, 0.034, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], css('--flow'), true, ' m³');
+gasChart('gasStateChart', ["17:10", "17:31", "18:01", "18:31", "19:01", "19:31", "20:01", "20:31", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "00:59", "01:29", "01:59", "02:29", "02:59", "03:29", "03:59"], [233.966, 234.324, 234.639, 234.932, 235.27, 235.578, 235.578, 236.454, 236.658, 236.658, 236.658, 236.658, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692, 236.692], css('--level'), false, '');
+gasChart('gasDiffChart', ["17:31", "18:01", "18:31", "19:01", "19:31", "20:01", "20:31", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "00:59", "01:29", "01:59", "02:29", "02:59", "03:29", "03:59"], [0.358, 0.315, 0.293, 0.338, 0.308, 0.0, 0.876, 0.204, 0.0, 0.0, 0.0, 0.034, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], css('--flow'), true, ' m³');
 
 // ---------- POMIESZCZENIA (pliki temperatures_<nazwa>.txt z repo velvethome.github.io) ----------
 // Linia pliku: <czas ISO>,<temperatura>,<wilgotność>. Dane pobiera przeglądarka, więc są zawsze aktualne.
